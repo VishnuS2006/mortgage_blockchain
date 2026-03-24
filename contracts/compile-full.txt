@@ -1,0 +1,171 @@
+﻿node : node:child_process:957
+At line:1 char:1
++ node -e "const cp = 
+require('child_process'); const r = 
+cp.execSync(' ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpeci 
+   fied: (node:child_process:957:Stri  
+  ng) [], RemoteException
+    + FullyQualifiedErrorId : NativeCo 
+   mmandError
+ 
+    throw err;
+    ^
+
+Error: Command failed: npx hardhat 
+compile
+[31m[1mError[22m[39m 
+[31m[1mHH606:[22m[39m The project 
+cannot be compiled, see reasons below.
+
+The Solidity version pragma statement 
+in these files doesn't match any of 
+the configured compilers in your 
+config. Change the pragma or configure 
+additional compiler versions in your 
+hardhat config.
+
+  * @openzeppelin/contracts/token/ERC72
+1/ERC721.sol (^0.8.24)
+  * @openzeppelin/contracts/token/ERC72
+1/extensions/ERC721URIStorage.sol 
+(^0.8.24)
+  * @openzeppelin/contracts/utils/Strin
+gs.sol (^0.8.24)
+  * @openzeppelin/contracts/utils/Bytes
+.sol (^0.8.24)
+
+These files and its dependencies 
+cannot be compiled with your config. 
+This can happen because they have 
+incompatible Solidity pragmas, or 
+don't match any of your configured 
+Solidity compilers.
+
+  * contracts/PropertyNFT.sol
+
+To learn more, run the command again 
+with --verbose
+
+Read about compiler configuration at 
+https://v2.hardhat.org/config
+
+For more info go to 
+https://v2.hardhat.org/HH606 or run 
+Hardhat with --show-stack-traces
+
+    at genericNodeError 
+(node:internal/errors:983:15)
+    at wrappedFn 
+(node:internal/errors:537:14)
+    at checkExecSyncError 
+(node:child_process:882:11)
+    at Object.execSync 
+(node:child_process:954:15)
+    at [eval]:1:51
+    at runScriptInThisContext 
+(node:internal/vm:209:10)
+    at 
+node:internal/process/execution:449:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:interna
+l/process/execution:447:60)
+    at evalFunction (node:internal/proc
+ess/execution:87:30) {
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    '\n',
+    
+'\x1B[31m\x1B[1mError\x1B[22m\x1B[39m 
+\x1B[31m\x1B[1mHH606:\x1B[22m\x1B[39m 
+The project cannot be compiled, see 
+reasons below.\n' +
+      '\n' +
+      "The Solidity version pragma 
+statement in these files doesn't match 
+any of the configured compilers in 
+your config. Change the pragma or 
+configure additional compiler versions 
+in your hardhat config.\n" +
+      '\n' +
+      '  * @openzeppelin/contracts/toke
+n/ERC721/ERC721.sol (^0.8.24)\n' +
+      '  * @openzeppelin/contracts/toke
+n/ERC721/extensions/ERC721URIStorage.so
+l (^0.8.24)\n' +
+      '  * @openzeppelin/contracts/util
+s/Strings.sol (^0.8.24)\n' +
+      '  * @openzeppelin/contracts/util
+s/Bytes.sol (^0.8.24)\n' +
+      '\n' +
+      "These files and its 
+dependencies cannot be compiled with 
+your config. This can happen because 
+they have incompatible Solidity 
+pragmas, or don't match any of your 
+configured Solidity compilers.\n" +
+      '\n' +
+      '  * 
+contracts/PropertyNFT.sol\n' +
+      '\n' +
+      'To learn more, run the command 
+again with --verbose\n' +
+      '\n' +
+      'Read about compiler 
+configuration at 
+https://v2.hardhat.org/config\n' +
+      '\n' +
+      'For more info go to 
+https://v2.hardhat.org/HH606 or run 
+Hardhat with --show-stack-traces\n'
+  ],
+  pid: 15716,
+  stdout: '\n',
+  stderr: 
+'\x1B[31m\x1B[1mError\x1B[22m\x1B[39m 
+\x1B[31m\x1B[1mHH606:\x1B[22m\x1B[39m 
+The project cannot be compiled, see 
+reasons below.\n' +
+    '\n' +
+    "The Solidity version pragma 
+statement in these files doesn't match 
+any of the configured compilers in 
+your config. Change the pragma or 
+configure additional compiler versions 
+in your hardhat config.\n" +
+    '\n' +
+    '  * @openzeppelin/contracts/token/
+ERC721/ERC721.sol (^0.8.24)\n' +
+    '  * @openzeppelin/contracts/token/
+ERC721/extensions/ERC721URIStorage.sol 
+(^0.8.24)\n' +
+    '  * @openzeppelin/contracts/utils/
+Strings.sol (^0.8.24)\n' +
+    '  * @openzeppelin/contracts/utils/
+Bytes.sol (^0.8.24)\n' +
+    '\n' +
+    "These files and its dependencies 
+cannot be compiled with your config. 
+This can happen because they have 
+incompatible Solidity pragmas, or 
+don't match any of your configured 
+Solidity compilers.\n" +
+    '\n' +
+    '  * contracts/PropertyNFT.sol\n' +
+    '\n' +
+    'To learn more, run the command 
+again with --verbose\n' +
+    '\n' +
+    'Read about compiler configuration 
+at https://v2.hardhat.org/config\n' +
+    '\n' +
+    'For more info go to 
+https://v2.hardhat.org/HH606 or run 
+Hardhat with --show-stack-traces\n'
+}
+
+Node.js v22.14.0

@@ -1,0 +1,228 @@
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.toolbar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.toolbar-controls input,
+.toolbar-controls select {
+  min-width: 180px;
+  padding: 0.8rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.82);
+  color: #e2e8f0;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.quick-card {
+  border-radius: 18px;
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.78));
+  padding: 1.25rem;
+}
+
+.quick-card h3 {
+  margin: 0 0 0.45rem;
+  color: #f8fafc;
+}
+
+.quick-card p {
+  margin: 0 0 1rem;
+  color: #94a3b8;
+}
+
+.loan-actions,
+.wallet-actions,
+.copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.loan-actions {
+  margin-top: auto;
+}
+
+.btn-secondary,
+.btn-danger,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fda4af;
+}
+
+.btn-ghost {
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+}
+
+.btn-secondary:disabled,
+.btn-danger:disabled,
+.btn-ghost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.loan-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .loan-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .loan-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.loan-review-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.78);
+  padding: 1.25rem;
+}
+
+.loan-review-card h3 {
+  margin: 0 0 0.45rem;
+  color: #f8fafc;
+}
+
+.loan-review-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.loan-review-meta div {
+  padding: 0.8rem;
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.65);
+}
+
+.loan-review-meta span {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.loan-review-meta strong {
+  color: #f8fafc;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tx-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #7dd3fc;
+  margin-top: 0.8rem;
+  font-size: 0.84rem;
+}
+
+.wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.wallet-card {
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.8);
+  padding: 1.2rem;
+}
+
+.wallet-card h3 {
+  margin: 0 0 0.5rem;
+  color: #f8fafc;
+}
+
+.wallet-card p {
+  margin: 0 0 0.85rem;
+  color: #94a3b8;
+}
+
+.wallet-pill {
+  display: inline-flex;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  font-family: 'Courier New', monospace;
+  background: rgba(30, 41, 59, 0.8);
+  color: #fbbf24;
+  font-size: 0.84rem;
+}
+
+.muted-text {
+  color: #94a3b8;
+}
+
+.tiny-text {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .toolbar-row,
+  .toolbar-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .loan-review-meta {
+    grid-template-columns: 1fr;
+  }
+}

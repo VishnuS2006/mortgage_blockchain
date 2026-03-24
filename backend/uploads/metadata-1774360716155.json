@@ -1,0 +1,15 @@
+{
+  "name": "Taj Mahal",
+  "description": "High on Love",
+  "image": "http://localhost:5000/uploads/1774360716124-Wallpaper Demon slayer Pilar del fuego Rengoku.jpeg",
+  "attributes": [
+    {
+      "trait_type": "Location",
+      "value": "Agra"
+    },
+    {
+      "trait_type": "Price",
+      "value": "50 ETH"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "mortgagebc",
+  "private": true,
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "deploy": "npx hardhat run scripts/deploy.js --network sepolia",
+    "deploy:sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
+    "mint:property": "npx hardhat run scripts/mintProperty.js --network sepolia",
+    "create:loan": "npx hardhat run scripts/createLoan.js --network sepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.0",
+    "solc": "^0.8.26"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0"
+  }
+}

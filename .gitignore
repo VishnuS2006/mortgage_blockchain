@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# env files
+.env
+.env.local
+
+# logs
+logs/
+*.log
+
+# build
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# blockchain
+artifacts/
+cache/
+typechain/
+
+# database
+*.sqlite
+*.db

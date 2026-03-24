@@ -1,0 +1,18 @@
+{
+  "propertyNFT": "0xA6ecE2135e809a32560495F1be95C979b9aa69De",
+  "mortgageCore": "0x89e0312FF4a06DE6b9Cd30aCDDbAadAAe68B74B3",
+  "mortgageContract": "0x89e0312FF4a06DE6b9Cd30aCDDbAadAAe68B74B3",
+  "mortgageLoan": "0x89e0312FF4a06DE6b9Cd30aCDDbAadAAe68B74B3",
+  "propertyEscrow": "0x49b690E6124fBe7A9E8117418cdb7c66483de944",
+  "loanRepayment": "0xB80B4C514F3eE553C365d7C1f81ce0788BEA8FA8",
+  "loanAutomation": "0xf14B2907A9113da14A36B36000B28504e842D907",
+  "verification": "0x7b4f1C80bc70AeBFd69079e87852c8A27c9dC122",
+  "network": "sepolia",
+  "chainId": "11155111",
+  "explorerBaseUrl": "https://sepolia.etherscan.io",
+  "openSeaBaseUrl": "https://testnets.opensea.io/assets/sepolia",
+  "authorizedLenders": [
+    "0x32577E249F643fD3E739560A33519716af0bc0AE"
+  ],
+  "deployedAt": "2026-03-24T13:46:40.219Z"
+}

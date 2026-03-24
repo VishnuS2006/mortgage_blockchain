@@ -1,0 +1,122 @@
+﻿node.exe : [31m[1mError[22m[39m 
+[31m[1mHH606:[22m[39m The project 
+cannot be compiled, see reasons below.
+At C:\Program Files\nodejs\npx.ps1:29 
+char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpeci 
+   fied: ([31m[1mError... reasons   
+  below.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCo 
+   mmandError
+ 
+
+The Solidity version pragma statement 
+in these files doesn't match any of 
+the configured compilers in your 
+config. Change the pragma or configure 
+additional compiler versions in your 
+hardhat config.
+
+  * @openzeppelin/contracts/token/ERC72
+1/ERC721.sol (^0.8.24)
+  * @openzeppelin/contracts/token/ERC72
+1/extensions/ERC721URIStorage.sol 
+(^0.8.24)
+  * @openzeppelin/contracts/utils/Strin
+gs.sol (^0.8.24)
+  * @openzeppelin/contracts/utils/Bytes
+.sol (^0.8.24)
+
+These files and its dependencies 
+cannot be compiled with your config. 
+This can happen because they have 
+incompatible Solidity pragmas, or 
+don't match any of your configured 
+Solidity compilers.
+
+  * contracts/PropertyNFT.sol
+
+To learn more, run the command again 
+with --verbose
+
+Read about compiler configuration at 
+https://v2.hardhat.org/config
+
+
+HardhatError: HH606: The project 
+cannot be compiled, see reasons below.
+
+The Solidity version pragma statement 
+in these files doesn't match any of 
+the configured compilers in your 
+config. Change the pragma or configure 
+additional compiler versions in your 
+hardhat config.
+
+  * @openzeppelin/contracts/token/ERC72
+1/ERC721.sol (^0.8.24)
+  * @openzeppelin/contracts/token/ERC72
+1/extensions/ERC721URIStorage.sol 
+(^0.8.24)
+  * @openzeppelin/contracts/utils/Strin
+gs.sol (^0.8.24)
+  * @openzeppelin/contracts/utils/Bytes
+.sol (^0.8.24)
+
+These files and its dependencies 
+cannot be compiled with your config. 
+This can happen because they have 
+incompatible Solidity pragmas, or 
+don't match any of your configured 
+Solidity compilers.
+
+  * contracts/PropertyNFT.sol
+
+To learn more, run the command again 
+with --verbose
+
+Read about compiler configuration at 
+https://v2.hardhat.org/config
+
+    at SimpleTaskDefinition.action (D:\
+PROJECTS\MortgageBC\contracts\node_modu
+les\hardhat\src\builtin-tasks\compile.t
+s:1093:15)
+    at Environment._runTaskDefinition (
+D:\PROJECTS\MortgageBC\contracts\node_m
+odules\hardhat\src\internal\core\runtim
+e-environment.ts:351:14)
+    at Environment.run (D:\PROJECTS\Mor
+tgageBC\contracts\node_modules\hardhat\
+src\internal\core\runtime-environment.t
+s:184:14)
+    at SimpleTaskDefinition.action (D:\
+PROJECTS\MortgageBC\contracts\node_modu
+les\hardhat\src\builtin-tasks\compile.t
+s:1415:7)
+    at Environment._runTaskDefinition (
+D:\PROJECTS\MortgageBC\contracts\node_m
+odules\hardhat\src\internal\core\runtim
+e-environment.ts:351:14)
+    at Environment.run (D:\PROJECTS\Mor
+tgageBC\contracts\node_modules\hardhat\
+src\internal\core\runtime-environment.t
+s:184:14)
+    at SimpleTaskDefinition.action (D:\
+PROJECTS\MortgageBC\contracts\node_modu
+les\hardhat\src\builtin-tasks\compile.t
+s:1513:7)
+    at Environment._runTaskDefinition (
+D:\PROJECTS\MortgageBC\contracts\node_m
+odules\hardhat\src\internal\core\runtim
+e-environment.ts:351:14)
+    at 
+OverriddenTaskDefinition._action (D:\PR
+OJECTS\MortgageBC\contracts\node_module
+s\@typechain\hardhat\src\index.ts:23:5)
+    at Environment._runTaskDefinition (
+D:\PROJECTS\MortgageBC\contracts\node_m
+odules\hardhat\src\internal\core\runtim
+e-environment.ts:351:14)
