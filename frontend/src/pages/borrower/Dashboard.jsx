@@ -7,7 +7,15 @@ import { ensureSupportedNetwork, getMortgageLoanContract, getProvider } from '..
 import EMICalculator from '../../components/EMICalculator';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import toast from 'react-hot-toast';
-import { FaBuilding, FaFileContract, FaClock, FaCheckCircle, FaExclamationTriangle, FaWallet } from 'react-icons/fa';
+import {
+  FaBuilding,
+  FaCheckCircle,
+  FaClock,
+  FaExclamationTriangle,
+  FaFileContract,
+  FaSyncAlt,
+  FaWallet,
+} from 'react-icons/fa';
 import './Pages.css';
 
 function getPropertyIpfsUrl(target) {
@@ -31,7 +39,16 @@ function getPropertyIpfsUrl(target) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { account, balance, chainId, networkName, connectWallet, isWalletMismatch } = useWallet();
+  const {
+    account,
+    balance,
+    chainId,
+    connectionStatus,
+    networkName,
+    connectWallet,
+    isWalletMismatch,
+    refreshBalance,
+  } = useWallet();
   const [properties, setProperties] = useState([]);
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -198,10 +215,6 @@ export default function Dashboard() {
         <h2>Wallet</h2>
         <div className="loan-details-grid">
           <div className="detail-item">
-            <span>Address</span>
-            <strong>{account || 'Not connected'}</strong>
-          </div>
-          <div className="detail-item">
             <span>Balance</span>
             <strong>{balance ? `${Number(balance).toFixed(4)} ETH` : 'Unavailable'}</strong>
           </div>
@@ -209,6 +222,26 @@ export default function Dashboard() {
             <span>Network</span>
             <strong>{networkName || (chainId ? `Chain ${chainId}` : 'Unknown')}</strong>
           </div>
+          <div className="detail-item">
+            <span>Status</span>
+            <strong>{connectionStatus}</strong>
+          </div>
+        </div>
+        <div className="wallet-action-row">
+          <button type="button" className="btn btn-primary" onClick={() => connectWallet()}>
+            <FaWallet /> {account ? 'Reconnect Wallet' : 'Connect Wallet'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={async () => {
+              await refreshBalance();
+              toast.success('Balance refreshed');
+            }}
+            disabled={!account}
+          >
+            <FaSyncAlt /> Refresh Balance
+          </button>
         </div>
       </div>
 

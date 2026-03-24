@@ -13,6 +13,7 @@ import {
 import { getDefaultRouteForRole } from '../utils/routing';
 import { formatEthAmount } from '../pages/lender/lenderHelpers';
 import './Navbar.css';
+import './NavbarOverrides.css';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -49,11 +50,14 @@ export default function Navbar() {
 
       {user && (
         <div className="navbar-links">
-          {links.map(({ to, icon: Icon, label }) => (
-            <Link key={to} to={to}>
-              <Icon /> {label}
-            </Link>
-          ))}
+          {links.map((link) => {
+            const IconComponent = link.icon;
+            return (
+              <Link key={link.to} to={link.to}>
+                <IconComponent /> {link.label}
+              </Link>
+            );
+          })}
         </div>
       )}
 

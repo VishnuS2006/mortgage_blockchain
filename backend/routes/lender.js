@@ -11,11 +11,12 @@ const immutableStatuses = new Set(['Active', 'Completed', 'Defaulted', 'Cancelle
 const loanWithRelationsSelect = `
   SELECT
     l.*,
-    l.blockchain_loan_id AS contractLoanId,
+    COALESCE(l.contractLoanId, l.blockchain_loan_id) AS contractLoanId,
     b.name AS borrower_name,
     b.email AS borrower_email,
     p.name AS property_name,
     p.location AS property_location,
+    COALESCE(NULLIF(p.metadata_ipfs, ''), NULLIF(p.image_ipfs, '')) AS ipfsHash,
     COALESCE(p.metadata_ipfs, p.image_ipfs) AS property_ipfs
   FROM loans l
   LEFT JOIN borrowers b ON l.borrower_id = b.id

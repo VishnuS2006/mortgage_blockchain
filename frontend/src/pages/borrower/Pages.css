@@ -4,6 +4,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  position: relative;
 }
 
 .page-header {
@@ -33,6 +34,14 @@
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   backdrop-filter: blur(8px);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.28);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(129, 140, 248, 0.32);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.35);
 }
 
 .card h2 {
@@ -59,6 +68,18 @@
 .btn-primary {
   background: linear-gradient(135deg, #4f46e5, #7c3aed);
   color: white;
+}
+
+.btn-secondary {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fda4af;
+  border: 1px solid rgba(239, 68, 68, 0.24);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -91,6 +112,7 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
+  align-items: stretch;
 }
 
 .stat-card {
@@ -102,6 +124,14 @@
   border: 1px solid rgba(99, 102, 241, 0.12);
   border-radius: 14px;
   backdrop-filter: blur(8px);
+  min-height: 108px;
+  height: 100%;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(129, 140, 248, 0.32);
 }
 
 .stat-icon {
@@ -289,6 +319,9 @@
   border-radius: 14px;
   overflow: hidden;
   transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .property-card:hover {
@@ -304,6 +337,9 @@
 
 .property-info {
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .property-info h3 {
@@ -323,6 +359,12 @@
   font-weight: 700;
   font-size: 1.1rem;
   margin: 0 0 0.5rem !important;
+}
+
+.wallet-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .nft-badge {

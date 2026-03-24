@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react';
 import api from '../utils/api';
 
@@ -33,6 +34,7 @@ export function AuthProvider({ children }) {
     const normalizedUser = normalizeUser(nextUser);
     localStorage.setItem('token', nextToken);
     localStorage.setItem('user', JSON.stringify(normalizedUser));
+    setLoading(true);
     setToken(nextToken);
     setUser(normalizedUser);
     return normalizedUser;
@@ -43,17 +45,15 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
+    setLoading(false);
   };
 
   useEffect(() => {
     let isActive = true;
 
     if (!token) {
-      setLoading(false);
       return undefined;
     }
-
-    setLoading(true);
 
     api.get('/auth/me')
       .then((res) => {

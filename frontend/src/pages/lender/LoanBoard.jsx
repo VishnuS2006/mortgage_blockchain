@@ -147,10 +147,11 @@ export default function LoanBoard({ view = 'all' }) {
 
     try {
       let txHash = '';
+      let connectedAccount = account || registeredWallet || '';
 
       const contractLoanId = getContractLoanId(loan);
       if (contractLoanId) {
-        await ensureWalletReady();
+        connectedAccount = await ensureWalletReady();
         setTxState(loan.id, type, 'signing');
 
         const provider = await getProvider();
@@ -167,10 +168,34 @@ export default function LoanBoard({ view = 'all' }) {
           throw new Error(`On-chain loan is ${onChainStatus.toLowerCase()}, not reviewable`);
         }
 
-        const gasEstimate =
-          type === 'approve'
-            ? await contract.approveLoan.estimateGas(contractLoanId)
-            : await contract.rejectLoan.estimateGas(contractLoanId);
+        let gasEstimate;
+
+        if (type === 'approve') {
+          try {
+            gasEstimate = await contract.approveLoan.estimateGas(contractLoanId);
+          } catch (estimateErr) {
+            const message = String(
+              estimateErr?.reason ||
+              estimateErr?.shortMessage ||
+              estimateErr?.message ||
+              ''
+            );
+
+            if (/property not verified/i.test(message) && typeof contract.verifyPropertyForLoan === 'function') {
+              setTxState(loan.id, 'verify', 'signing');
+              const verifyTx = await contract.verifyPropertyForLoan(contractLoanId);
+              setTxState(loan.id, 'verify', 'pending', verifyTx.hash);
+              await verifyTx.wait();
+              setTxState(loan.id, 'verify', 'confirmed', verifyTx.hash);
+              toast.success('Property verified on-chain');
+              gasEstimate = await contract.approveLoan.estimateGas(contractLoanId);
+            } else {
+              throw estimateErr;
+            }
+          }
+        } else {
+          gasEstimate = await contract.rejectLoan.estimateGas(contractLoanId);
+        }
 
         const tx =
           type === 'approve'
@@ -184,7 +209,10 @@ export default function LoanBoard({ view = 'all' }) {
       }
 
       const endpoint = type === 'approve' ? `/loans/${loan.id}/approve` : `/loans/${loan.id}/reject`;
-      await api.put(endpoint, { txHash });
+      await api.put(endpoint, {
+        txHash,
+        walletAddress: connectedAccount || account || registeredWallet || '',
+      });
       toast.success(type === 'approve' ? 'Loan Approved' : 'Loan Rejected');
       await loadLoans();
     } catch (err) {
@@ -314,23 +342,23 @@ export default function LoanBoard({ view = 'all' }) {
                 </div>
 
                 <div className="loan-review-meta">
-                  <div>
+                  <div className="loan-meta-panel">
                     <span>Amount</span>
                     <strong>{formatEthAmount(loan.loan_amount)}</strong>
                   </div>
-                  <div>
+                  <div className="loan-meta-panel">
                     <span>Interest</span>
                     <strong>{formatPercent(loan.interest_rate)}</strong>
                   </div>
-                  <div>
+                  <div className="loan-meta-panel">
                     <span>Duration</span>
                     <strong>{loan.duration_months} months</strong>
                   </div>
-                  <div>
+                  <div className="loan-meta-panel">
                     <span>Property</span>
                     <strong>{loan.property_name || `NFT #${loan.nft_id}`}</strong>
                   </div>
-                  <div>
+                  <div className="loan-meta-panel loan-meta-wide">
                     <span>Contract Loan ID</span>
                     <strong>{getContractLoanId(loan) ?? 'Pending sync'}</strong>
                   </div>

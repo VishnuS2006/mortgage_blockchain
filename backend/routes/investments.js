@@ -28,11 +28,13 @@ const investmentSelect = `
     l.status AS loan_status,
     l.loan_amount,
     l.interest_rate,
-    l.blockchain_loan_id,
-    l.blockchain_loan_id AS contractLoanId,
+    COALESCE(l.contractLoanId, l.blockchain_loan_id) AS blockchain_loan_id,
+    COALESCE(l.contractLoanId, l.blockchain_loan_id) AS contractLoanId,
     b.name AS borrower_name,
     p.name AS property_name,
-    p.location AS property_location
+    p.location AS property_location,
+    COALESCE(NULLIF(p.metadata_ipfs, ''), NULLIF(p.image_ipfs, '')) AS ipfsHash,
+    COALESCE(p.metadata_ipfs, p.image_ipfs) AS property_ipfs
   FROM investments i
   INNER JOIN loans l ON i.loan_id = l.id
   LEFT JOIN borrowers b ON l.borrower_id = b.id
@@ -84,6 +86,20 @@ router.post('/', authMiddleware, roleMiddleware('lender'), async (req, res) => {
 
     if (!loanId || !amount || !txHash) {
       return res.status(400).json({ error: 'Loan ID, amount, and transaction hash are required' });
+    }
+
+    const lender = await db.prepare(`
+      SELECT COALESCE(wallet_address, walletAddress) AS walletAddress
+      FROM borrowers
+      WHERE id = ?
+    `).get(req.user.userId);
+
+    if (
+      lender?.walletAddress &&
+      walletAddress &&
+      lender.walletAddress.toLowerCase() !== walletAddress.toLowerCase()
+    ) {
+      return res.status(403).json({ error: 'Only the registered lender wallet can fund this loan' });
     }
 
     const loan = await db.prepare(`

@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { FaChartLine, FaClock, FaFileContract, FaHandHoldingUsd, FaWallet } from 'react-icons/fa';
+import {
+  FaChartLine,
+  FaClock,
+  FaFileContract,
+  FaHandHoldingUsd,
+  FaSyncAlt,
+  FaWallet,
+} from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletRuntimeContext';
@@ -12,7 +19,16 @@ import './Lender.css';
 
 export default function LenderDashboard() {
   const { user } = useAuth();
-  const { account, connectWallet, isWalletMismatch } = useWallet();
+  const {
+    account,
+    balance,
+    chainId,
+    connectionStatus,
+    networkName,
+    connectWallet,
+    isWalletMismatch,
+    refreshBalance,
+  } = useWallet();
   const [loading, setLoading] = useState(true);
   const [loans, setLoans] = useState([]);
   const [investments, setInvestments] = useState([]);
@@ -111,6 +127,37 @@ export default function LenderDashboard() {
           <div>
             <span className="stat-value">{formatEthAmount(totalInvestedAmount, 2)}</span>
             <span className="stat-label">Total Invested</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="quick-grid section">
+        <div className="quick-card">
+          <h3>Balance</h3>
+          <p>{balance ? formatEthAmount(balance) : 'Unavailable'}</p>
+        </div>
+        <div className="quick-card">
+          <h3>Network</h3>
+          <p>{networkName || (chainId ? `Chain ${chainId}` : 'Unknown')}</p>
+        </div>
+        <div className="quick-card">
+          <h3>Status</h3>
+          <p>{connectionStatus}</p>
+          <div className="wallet-actions">
+            <button type="button" className="btn btn-primary" onClick={() => connectWallet()}>
+              <FaWallet /> {account ? 'Reconnect Wallet' : 'Connect Wallet'}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={async () => {
+                await refreshBalance();
+                toast.success('Balance refreshed');
+              }}
+              disabled={!account}
+            >
+              <FaSyncAlt /> Refresh Balance
+            </button>
           </div>
         </div>
       </div>

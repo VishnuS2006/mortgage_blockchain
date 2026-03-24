@@ -33,7 +33,7 @@ async function findUserById(id) {
       name,
       email,
       COALESCE(role, 'borrower') AS role,
-      wallet_address,
+      COALESCE(wallet_address, walletAddress) AS wallet_address,
       created_at
     FROM borrowers
     WHERE id = ?
@@ -74,7 +74,7 @@ async function handleRegister(req, res) {
 
     if (walletAddress) {
       const existingWallet = await db.prepare(
-        'SELECT id FROM borrowers WHERE LOWER(wallet_address) = LOWER(?)'
+        'SELECT id FROM borrowers WHERE LOWER(COALESCE(wallet_address, walletAddress)) = LOWER(?)'
       ).get(walletAddress);
 
       if (existingWallet) {
@@ -84,9 +84,9 @@ async function handleRegister(req, res) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await db.prepare(`
-      INSERT INTO borrowers (name, email, password_hash, role, wallet_address, wallet_signature)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(name, email, passwordHash, role, walletAddress, walletSignature);
+      INSERT INTO borrowers (name, email, password_hash, role, walletAddress, wallet_address, wallet_signature)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(name, email, passwordHash, role, walletAddress, walletAddress, walletSignature);
 
     const user = {
       id: result.lastInsertRowid,
@@ -129,7 +129,7 @@ router.post('/login', async (req, res) => {
         email,
         password_hash,
         COALESCE(role, 'borrower') AS role,
-        wallet_address,
+        COALESCE(wallet_address, walletAddress) AS wallet_address,
         created_at
       FROM borrowers
       WHERE LOWER(email) = LOWER(?)
@@ -172,7 +172,7 @@ router.post('/link-wallet', authMiddleware, async (req, res) => {
     const existingWallet = await db.prepare(`
       SELECT id
       FROM borrowers
-      WHERE LOWER(wallet_address) = LOWER(?)
+      WHERE LOWER(COALESCE(wallet_address, walletAddress)) = LOWER(?)
         AND id != ?
     `).get(walletAddress, req.user.userId);
 
@@ -182,9 +182,9 @@ router.post('/link-wallet', authMiddleware, async (req, res) => {
 
     await db.prepare(`
       UPDATE borrowers
-      SET wallet_address = ?, wallet_signature = ?
+      SET walletAddress = ?, wallet_address = ?, wallet_signature = ?
       WHERE id = ?
-    `).run(walletAddress, walletSignature, req.user.userId);
+    `).run(walletAddress, walletAddress, walletSignature, req.user.userId);
 
     const user = await findUserById(req.user.userId);
 

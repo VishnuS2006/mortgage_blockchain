@@ -20,8 +20,8 @@ function getChainDefaults(chainId, networkName) {
   }
 
   return {
-    network: networkName || 'localhost',
-    chainId: String(chainId || 31337),
+    network: networkName || 'unknown',
+    chainId: String(chainId || 0),
     explorerBaseUrl: '',
     openSeaBaseUrl: '',
   };
@@ -96,6 +96,18 @@ async function getLoanRepaymentFactory() {
 async function main() {
   console.log('Deploying contracts...\n');
 
+  const signers = await hre.ethers.getSigners();
+  if (!signers.length) {
+    throw new Error(
+      'No deployer account available. Set PRIVATE_KEY in the root .env before deploying to Sepolia.'
+    );
+  }
+  const network = await hre.ethers.provider.getNetwork();
+  const chainDefaults = getChainDefaults(Number(network.chainId), hre.network.name);
+  if (chainDefaults.network !== 'sepolia') {
+    throw new Error(`Sepolia deployment only. Connected network: ${chainDefaults.network}`);
+  }
+
   if (!process.env.PRIVATE_KEY) {
     throw new Error(
       'Missing PRIVATE_KEY in MortgageBC/.env. Add a funded Sepolia wallet private key before deploying.'
@@ -112,18 +124,6 @@ async function main() {
     throw new Error(
       'Missing Sepolia RPC configuration in MortgageBC/.env. Set SEPOLIA_RPC_URL or VITE_RPC_URL before deploying.'
     );
-  }
-
-  const signers = await hre.ethers.getSigners();
-  if (!signers.length) {
-    throw new Error(
-      'No deployer account available. Set PRIVATE_KEY in the root .env before deploying to Sepolia.'
-    );
-  }
-  const network = await hre.ethers.provider.getNetwork();
-  const chainDefaults = getChainDefaults(Number(network.chainId), hre.network.name);
-  if (chainDefaults.network !== 'sepolia') {
-    throw new Error(`Sepolia deployment only. Connected network: ${chainDefaults.network}`);
   }
   const configuredLenders = parseCsvAddresses(process.env.INITIAL_LENDER_ADDRESSES);
   const initialLenders = configuredLenders.length > 0
@@ -200,7 +200,19 @@ async function main() {
   fs.writeFileSync(outputPath, JSON.stringify(addresses, null, 2));
   console.log(`\nAddresses saved to: ${outputPath}`);
 
-  upsertEnvFile(path.join(__dirname, '..', '.env'), {
+  const rootEnvPath = path.join(__dirname, '..', '..', '.env');
+  upsertEnvFile(rootEnvPath, {
+    VITE_PROPERTY_NFT_ADDRESS: propertyNFTAddress,
+    VITE_MORTGAGE_ADDRESS: mortgageCoreAddress,
+    VITE_MORTGAGE_CORE_ADDRESS: mortgageCoreAddress,
+    VITE_PROPERTY_ESCROW_ADDRESS: propertyEscrowAddress,
+    VITE_LOAN_REPAYMENT_ADDRESS: loanRepaymentAddress,
+    VITE_LOAN_AUTOMATION_ADDRESS: loanAutomationAddress,
+    VITE_VERIFICATION_ADDRESS: verificationAddress,
+    VITE_CHAIN_ID: chainDefaults.chainId,
+    VITE_NETWORK_NAME: chainDefaults.network,
+    VITE_CHAIN_EXPLORER_URL: chainDefaults.explorerBaseUrl,
+    VITE_OPENSEA_BASE_URL: chainDefaults.openSeaBaseUrl,
     PROPERTY_NFT_ADDRESS: propertyNFTAddress,
     MORTGAGE_CORE_ADDRESS: mortgageCoreAddress,
     MORTGAGE_CONTRACT_ADDRESS: mortgageCoreAddress,
@@ -221,31 +233,6 @@ async function main() {
     path.join(frontendPublicPath, 'deployed-addresses.json'),
     JSON.stringify(addresses, null, 2)
   );
-
-  upsertEnvFile(path.join(__dirname, '..', '..', 'frontend', '.env'), {
-    VITE_PROPERTY_NFT_ADDRESS: propertyNFTAddress,
-    VITE_MORTGAGE_ADDRESS: mortgageCoreAddress,
-    VITE_MORTGAGE_CORE_ADDRESS: mortgageCoreAddress,
-    VITE_PROPERTY_ESCROW_ADDRESS: propertyEscrowAddress,
-    VITE_LOAN_REPAYMENT_ADDRESS: loanRepaymentAddress,
-    VITE_LOAN_AUTOMATION_ADDRESS: loanAutomationAddress,
-    VITE_VERIFICATION_ADDRESS: verificationAddress,
-    VITE_CHAIN_ID: chainDefaults.chainId,
-    VITE_NETWORK_NAME: chainDefaults.network,
-    VITE_CHAIN_EXPLORER_URL: chainDefaults.explorerBaseUrl,
-    VITE_OPENSEA_BASE_URL: chainDefaults.openSeaBaseUrl,
-    REACT_APP_PROPERTY_NFT_ADDRESS: propertyNFTAddress,
-    REACT_APP_MORTGAGE_ADDRESS: mortgageCoreAddress,
-    REACT_APP_MORTGAGE_CORE_ADDRESS: mortgageCoreAddress,
-    REACT_APP_PROPERTY_ESCROW_ADDRESS: propertyEscrowAddress,
-    REACT_APP_LOAN_REPAYMENT_ADDRESS: loanRepaymentAddress,
-    REACT_APP_LOAN_AUTOMATION_ADDRESS: loanAutomationAddress,
-    REACT_APP_VERIFICATION_ADDRESS: verificationAddress,
-    REACT_APP_CHAIN_ID: chainDefaults.chainId,
-    REACT_APP_NETWORK_NAME: chainDefaults.network,
-    REACT_APP_CHAIN_EXPLORER_URL: chainDefaults.explorerBaseUrl,
-    REACT_APP_OPENSEA_BASE_URL: chainDefaults.openSeaBaseUrl,
-  });
 
   const artifactsDir = path.join(__dirname, '..', 'artifacts', 'contracts');
   copyAbi(artifactsDir, 'PropertyNFT.sol', 'PropertyNFT', frontendPublicPath);

@@ -1,5 +1,6 @@
 ﻿import { useDeferredValue, useEffect, useState } from 'react';
 import { formatEther } from 'ethers';
+import { useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { FaCheck, FaExternalLinkAlt, FaTimes, FaWallet } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -31,7 +32,7 @@ export default function LoanManagement() {
   const [txStateByLoanId, setTxStateByLoanId] = useState({});
   const deferredSearch = useDeferredValue(search);
 
-  const loadLoans = async () => {
+  const loadLoans = useCallback(async () => {
     try {
       const params = {};
       if (statusFilter !== 'all') {
@@ -48,12 +49,12 @@ export default function LoanManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [deferredSearch, statusFilter]);
 
   useEffect(() => {
     setLoading(true);
     loadLoans();
-  }, [statusFilter, deferredSearch]);
+  }, [loadLoans]);
 
   const setTxState = (loanId, action, state, txHash = '') => {
     setTxStateByLoanId((current) => ({

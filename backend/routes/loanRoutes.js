@@ -29,7 +29,7 @@ function mapLoanStatusFilter(status) {
 const loanSelect = `
   SELECT
     l.*,
-    l.blockchain_loan_id AS contractLoanId,
+    COALESCE(l.contractLoanId, l.blockchain_loan_id) AS contractLoanId,
     b.name AS borrower_name,
     b.email AS borrower_email,
     b.wallet_address AS borrower_wallet_address,
@@ -56,7 +56,7 @@ async function getLoanById(loanId) {
       l.reviewed_by,
       l.lender_id,
       l.borrower_id,
-      l.blockchain_loan_id AS contractLoanId
+      COALESCE(l.contractLoanId, l.blockchain_loan_id) AS contractLoanId
     FROM loans l
     WHERE l.id = ?
   `).get(loanId);
@@ -67,6 +67,16 @@ async function getLoanDetails(loanId) {
     ${loanSelect}
     WHERE l.id = ?
   `).get(loanId);
+}
+
+async function getRegisteredWallet(userId) {
+  const lender = await db.prepare(`
+    SELECT COALESCE(wallet_address, walletAddress) AS walletAddress
+    FROM borrowers
+    WHERE id = ?
+  `).get(userId);
+
+  return lender?.walletAddress || null;
 }
 
 router.post('/apply', authMiddleware, roleMiddleware('borrower'), async (req, res) => {
@@ -105,9 +115,10 @@ router.post('/apply', authMiddleware, roleMiddleware('borrower'), async (req, re
         total_payable,
         remaining_balance,
         blockchain_loan_id,
+        contractLoanId,
         tx_hash
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       req.user.userId,
       propertyId || null,
@@ -118,6 +129,7 @@ router.post('/apply', authMiddleware, roleMiddleware('borrower'), async (req, re
       emiAmount,
       totalPayable,
       totalPayable,
+      contractLoanId || blockchainLoanId || null,
       contractLoanId || blockchainLoanId || null,
       txHash || ''
     );
@@ -291,6 +303,7 @@ router.delete('/:id', authMiddleware, roleMiddleware('borrower'), async (req, re
 
     const existingLoan = await db.prepare(`
       SELECT id, status, borrower_id, blockchain_loan_id
+      , COALESCE(contractLoanId, blockchain_loan_id) AS contractLoanId
       FROM loans
       WHERE id = ? AND borrower_id = ?
     `).get(loanId, req.user.userId);
@@ -312,7 +325,7 @@ router.delete('/:id', authMiddleware, roleMiddleware('borrower'), async (req, re
       message: 'Loan deleted',
       loan: {
         id: loanId,
-        contractLoanId: existingLoan.blockchain_loan_id,
+        contractLoanId: existingLoan.contractLoanId,
       },
     });
   } catch (err) {
@@ -330,6 +343,12 @@ router.put('/:id/approve', authMiddleware, roleMiddleware('lender'), async (req,
 
     if (req.user.role !== 'lender') {
       return res.status(403).json({ error: 'Only lenders can approve loans' });
+    }
+
+    const registeredWallet = await getRegisteredWallet(req.user.userId);
+    const activeWallet = String(req.body.walletAddress || req.user.walletAddress || '').trim() || null;
+    if (registeredWallet && activeWallet && registeredWallet.toLowerCase() !== activeWallet.toLowerCase()) {
+      return res.status(403).json({ error: 'Only the registered lender wallet can approve this loan' });
     }
 
     const loan = await getLoanById(loanId);
@@ -377,6 +396,12 @@ router.put('/:id/reject', authMiddleware, roleMiddleware('lender'), async (req, 
 
     if (req.user.role !== 'lender') {
       return res.status(403).json({ error: 'Only lenders can reject loans' });
+    }
+
+    const registeredWallet = await getRegisteredWallet(req.user.userId);
+    const activeWallet = String(req.body.walletAddress || req.user.walletAddress || '').trim() || null;
+    if (registeredWallet && activeWallet && registeredWallet.toLowerCase() !== activeWallet.toLowerCase()) {
+      return res.status(403).json({ error: 'Only the registered lender wallet can reject this loan' });
     }
 
     const loan = await getLoanById(loanId);

@@ -1,0 +1,37 @@
+.navbar {
+  flex-wrap: wrap;
+  gap: 0.85rem 1.25rem;
+  padding: 0.9rem 2rem;
+  min-height: 72px;
+  height: auto;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.88));
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.18);
+}
+
+.navbar-links {
+  flex-wrap: wrap;
+}
+
+.navbar-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.user-name {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.72);
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.85rem 1rem;
+    justify-content: center;
+  }
+
+  .navbar-brand,
+  .navbar-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useCallback } from 'react';
 import { useWallet } from '../../context/WalletRuntimeContext';
 import {
   ensureSupportedNetwork,
@@ -40,11 +41,7 @@ export default function Payment() {
   const [paying, setPaying] = useState(false);
   const [txStatus, setTxStatus] = useState(null);
 
-  useEffect(() => {
-    fetchLoans();
-  }, []);
-
-  const fetchLoans = async () => {
+  const fetchLoans = useCallback(async () => {
     try {
       const res = await api.get('/loans/my-loans');
       const allLoans = res.data.loans;
@@ -61,7 +58,11 @@ export default function Payment() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [preselectedLoanId]);
+
+  useEffect(() => {
+    fetchLoans();
+  }, [fetchLoans]);
 
   const selectLoan = async (loan) => {
     setSelectedLoan(loan);

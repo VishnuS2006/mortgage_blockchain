@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+/* eslint-disable no-unused-vars, react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { getExpectedChainId } from '../utils/contract';
 import { useAuth } from './AuthContext';

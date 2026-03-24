@@ -628,6 +628,11 @@
               "type": "uint256"
             },
             {
+              "internalType": "bool",
+              "name": "exists",
+              "type": "bool"
+            },
+            {
               "internalType": "address",
               "name": "borrower",
               "type": "address"
@@ -847,6 +852,11 @@
           "internalType": "uint256",
           "name": "id",
           "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "exists",
+          "type": "bool"
         },
         {
           "internalType": "address",
@@ -1141,6 +1151,11 @@
               "internalType": "uint256",
               "name": "id",
               "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "exists",
+              "type": "bool"
             },
             {
               "internalType": "address",

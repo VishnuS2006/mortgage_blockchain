@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { BrowserProvider, formatEther } from 'ethers';
 import toast from 'react-hot-toast';
@@ -80,7 +81,7 @@ export function WalletProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [account, chainId]);
+  }, [account, chainId, refreshBalance]);
 
   useEffect(() => {
     if (!window.ethereum) {

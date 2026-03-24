@@ -6,7 +6,7 @@ function buildTokenPayload(user) {
   return {
     userId: user.id,
     role: user.role || 'borrower',
-    walletAddress: user.wallet_address ?? null,
+    walletAddress: user.wallet_address ?? user.walletAddress ?? null,
     email: user.email,
     name: user.name,
   };

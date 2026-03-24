@@ -1,6 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
+const path = require("path");
 try {
-  require("dotenv").config();
+  require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 } catch (error) {
   // Allow Hardhat to run before dotenv is installed; env vars still work if set externally.
 }
@@ -32,6 +33,16 @@ const {
   ETHERSCAN_API_KEY,
 } = process.env;
 
+function isFilled(value) {
+  const normalized = String(value || "").trim();
+  return Boolean(
+    normalized &&
+      !normalized.includes("your_api_key") &&
+      !normalized.includes("your-key") &&
+      normalized !== "https://eth-sepolia.g.alchemy.com/v2/"
+  );
+}
+
 function getAccounts() {
   if (!PRIVATE_KEY) {
     return [];
@@ -42,23 +53,23 @@ function getAccounts() {
 }
 
 function getSepoliaRpcUrl() {
-  if (SEPOLIA_URL) {
+  if (isFilled(SEPOLIA_URL)) {
     return SEPOLIA_URL;
   }
 
-  if (SEPOLIA_RPC_URL) {
+  if (isFilled(SEPOLIA_RPC_URL)) {
     return SEPOLIA_RPC_URL;
   }
 
-  if (VITE_RPC_URL) {
+  if (isFilled(VITE_RPC_URL)) {
     return VITE_RPC_URL;
   }
 
-  if (ALCHEMY_API_KEY) {
+  if (isFilled(ALCHEMY_API_KEY)) {
     return `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
   }
 
-  if (INFURA_API_KEY) {
+  if (isFilled(INFURA_API_KEY)) {
     return `https://sepolia.infura.io/v3/${INFURA_API_KEY}`;
   }
 

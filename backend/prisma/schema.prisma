@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../db/mortgage.db"
+}
+
+model Borrower {
+  id              Int          @id @default(autoincrement())
+  name            String
+  email           String       @unique
+  passwordHash    String       @map("password_hash")
+  role            String       @default("borrower")
+  walletAddressDb String?      @map("wallet_address")
+  walletAddress   String?      @map("walletAddress")
+  walletSignature String?      @map("wallet_signature")
+  createdAt       DateTime?    @default(now()) @map("created_at")
+  properties      Property[]
+  loans           Loan[]       @relation("BorrowerLoans")
+  lenderLoans     Loan[]       @relation("LenderLoans")
+  reviewedLoans   Loan[]       @relation("ReviewedLoans")
+  investments     Investment[] @relation("LenderInvestments")
+
+  @@map("borrowers")
+}
+
+model Property {
+  id           Int        @id @default(autoincrement())
+  borrowerId   Int        @map("borrower_id")
+  name         String
+  location     String
+  price        Float
+  description  String?
+  imageIpfs    String?    @map("image_ipfs")
+  metadataIpfs String?    @map("metadata_ipfs")
+  nftTokenId   Int?       @map("nft_token_id")
+  txHash       String?    @map("tx_hash")
+  createdAt    DateTime?  @default(now()) @map("created_at")
+  borrower     Borrower   @relation(fields: [borrowerId], references: [id])
+  loans        Loan[]
+
+  @@map("properties")
+}
+
+model Loan {
+  id                 Int          @id @default(autoincrement())
+  borrowerId         Int          @map("borrower_id")
+  propertyId         Int?         @map("property_id")
+  nftId              Int?         @map("nft_id")
+  loanAmount         Float        @map("loan_amount")
+  interestRate       Float        @map("interest_rate")
+  durationMonths     Int          @map("duration_months")
+  emiAmount          Float?       @map("emi_amount")
+  totalPayable       Float?       @map("total_payable")
+  amountPaid         Float?       @default(0) @map("amount_paid")
+  remainingBalance   Float?       @map("remaining_balance")
+  status             String?      @default("Pending")
+  blockchainLoanId   Int?         @map("blockchain_loan_id")
+  contractLoanId     Int?
+  txHash             String?      @map("tx_hash")
+  lenderId           Int?         @map("lender_id")
+  reviewedBy         Int?         @map("reviewed_by")
+  reviewedAt         DateTime?    @map("reviewed_at")
+  approvedAt         DateTime?    @map("approved_at")
+  rejectedAt         DateTime?    @map("rejected_at")
+  fundedAt           DateTime?    @map("funded_at")
+  completedAt        DateTime?    @map("completed_at")
+  defaultedAt        DateTime?    @map("defaulted_at")
+  lastPaymentAt      DateTime?    @map("last_payment_at")
+  verificationStatus String?      @default("pending") @map("verification_status")
+  rejectionReason    String?      @map("rejection_reason")
+  createdAt          DateTime?    @default(now()) @map("created_at")
+  borrower           Borrower     @relation("BorrowerLoans", fields: [borrowerId], references: [id])
+  property           Property?    @relation(fields: [propertyId], references: [id])
+  lender             Borrower?    @relation("LenderLoans", fields: [lenderId], references: [id])
+  reviewer           Borrower?    @relation("ReviewedLoans", fields: [reviewedBy], references: [id])
+  payments           Payment[]
+  emis               Emi[]
+  investments        Investment[]
+
+  @@map("loans")
+}
+
+model Payment {
+  id        Int       @id @default(autoincrement())
+  loanId    Int       @map("loan_id")
+  amount    Float
+  txHash    String?   @map("tx_hash")
+  createdAt DateTime? @default(now()) @map("created_at")
+  loan      Loan      @relation(fields: [loanId], references: [id])
+
+  @@map("payments")
+}
+
+model Emi {
+  id        Int       @id @default(autoincrement())
+  loanId    Int       @map("loan_id")
+  emiIndex  Int       @map("emi_index")
+  amount    Float
+  dueDate   DateTime  @map("due_date")
+  paid      Int       @default(0)
+  paidAt    DateTime? @map("paid_at")
+  txHash    String?   @map("tx_hash")
+  status    String    @default("pending")
+  createdAt DateTime? @default(now()) @map("created_at")
+  loan      Loan      @relation(fields: [loanId], references: [id])
+
+  @@unique([loanId, emiIndex])
+  @@map("emis")
+}
+
+model Investment {
+  id            Int       @id @default(autoincrement())
+  lenderId      Int       @map("lender_id")
+  loanId        Int       @map("loan_id")
+  txHash        String    @unique @map("tx_hash")
+  amount        Float
+  status        String    @default("confirmed")
+  walletAddress String?   @map("wallet_address")
+  interestRate  Float?    @map("interest_rate")
+  createdAt     DateTime? @default(now()) @map("created_at")
+  updatedAt     DateTime? @default(now()) @map("updated_at")
+  lender        Borrower  @relation("LenderInvestments", fields: [lenderId], references: [id])
+  loan          Loan      @relation(fields: [loanId], references: [id])
+
+  @@map("investments")
+}

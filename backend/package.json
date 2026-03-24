@@ -4,16 +4,21 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node server.js",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema prisma/schema.prisma",
+    "prisma:view": "node prisma/view-data.cjs"
   },
   "dependencies": {
+    "@prisma/client": "^6.17.1",
     "bcrypt": "^5.1.1",
-    "sqlite3": "^5.1.6",
-    "sqlite": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "prisma": "^6.17.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.6"
   }
 }

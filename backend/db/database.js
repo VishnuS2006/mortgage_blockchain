@@ -139,16 +139,18 @@ async function migrateLegacyUsersTable() {
           email,
           password_hash,
           role,
+          walletAddress,
           wallet_address,
           created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         legacyUser.id,
         legacyUser.name,
         legacyUser.email,
         legacyUser.password,
         nextRole,
+        nextWalletAddress,
         nextWalletAddress,
         nextCreatedAt,
       ]);
@@ -161,18 +163,21 @@ async function migrateLegacyUsersTable() {
         email,
         password_hash,
         role,
+        walletAddress,
         wallet_address,
         created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(email) DO UPDATE SET
         role = COALESCE(NULLIF(excluded.role, ''), borrowers.role),
+        walletAddress = COALESCE(excluded.walletAddress, borrowers.walletAddress),
         wallet_address = COALESCE(excluded.wallet_address, borrowers.wallet_address)
     `, [
       legacyUser.name,
       legacyUser.email,
       legacyUser.password,
       nextRole,
+      nextWalletAddress,
       nextWalletAddress,
       nextCreatedAt,
     ]);
@@ -197,7 +202,7 @@ async function createUsersCompatibilityView() {
       email,
       password_hash AS password,
       COALESCE(role, 'borrower') AS role,
-      wallet_address AS walletAddress,
+      COALESCE(walletAddress, wallet_address) AS walletAddress,
       created_at AS createdAt
     FROM borrowers;
 
@@ -209,6 +214,7 @@ async function createUsersCompatibilityView() {
         email,
         password_hash,
         role,
+        walletAddress,
         wallet_address,
         created_at
       )
@@ -217,6 +223,7 @@ async function createUsersCompatibilityView() {
         LOWER(TRIM(NEW.email)),
         COALESCE(NEW.password, ''),
         COALESCE(NULLIF(TRIM(NEW.role), ''), 'borrower'),
+        NULLIF(TRIM(NEW.walletAddress), ''),
         NULLIF(TRIM(NEW.walletAddress), ''),
         COALESCE(NEW.createdAt, CURRENT_TIMESTAMP)
       );
@@ -234,6 +241,10 @@ async function createUsersCompatibilityView() {
           ELSE NEW.password
         END,
         role = COALESCE(NULLIF(TRIM(NEW.role), ''), role, 'borrower'),
+        walletAddress = CASE
+          WHEN NEW.walletAddress IS NULL OR TRIM(NEW.walletAddress) = '' THEN walletAddress
+          ELSE NEW.walletAddress
+        END,
         wallet_address = CASE
           WHEN NEW.walletAddress IS NULL OR TRIM(NEW.walletAddress) = '' THEN wallet_address
           ELSE NEW.walletAddress
@@ -259,6 +270,7 @@ async function initializeDatabase() {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'borrower',
       wallet_address TEXT,
+      walletAddress TEXT,
       wallet_signature TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -292,6 +304,7 @@ async function initializeDatabase() {
       remaining_balance REAL,
       status TEXT DEFAULT 'Pending',
       blockchain_loan_id INTEGER,
+      contractLoanId INTEGER,
       tx_hash TEXT,
       lender_id INTEGER,
       reviewed_by INTEGER,
@@ -355,7 +368,9 @@ async function initializeDatabase() {
 
   await addColumnIfMissing('borrowers', 'role', "role TEXT NOT NULL DEFAULT 'borrower'");
   await addColumnIfMissing('borrowers', 'wallet_address', 'wallet_address TEXT');
+  await addColumnIfMissing('borrowers', 'walletAddress', 'walletAddress TEXT');
   await addColumnIfMissing('borrowers', 'wallet_signature', 'wallet_signature TEXT');
+  await addColumnIfMissing('loans', 'contractLoanId', 'contractLoanId INTEGER');
   await addColumnIfMissing('loans', 'lender_id', 'lender_id INTEGER REFERENCES borrowers(id)');
   await addColumnIfMissing('loans', 'reviewed_by', 'reviewed_by INTEGER REFERENCES borrowers(id)');
   await addColumnIfMissing('loans', 'reviewed_at', 'reviewed_at DATETIME');
@@ -369,6 +384,22 @@ async function initializeDatabase() {
   await addColumnIfMissing('loans', 'rejection_reason', 'rejection_reason TEXT');
 
   await runRaw("UPDATE borrowers SET role = 'borrower' WHERE role IS NULL OR TRIM(role) = ''");
+  await runRaw(`
+    UPDATE borrowers
+    SET walletAddress = COALESCE(NULLIF(walletAddress, ''), wallet_address)
+  `);
+  await runRaw(`
+    UPDATE borrowers
+    SET wallet_address = COALESCE(NULLIF(wallet_address, ''), walletAddress)
+  `);
+  await runRaw(`
+    UPDATE loans
+    SET contractLoanId = COALESCE(contractLoanId, blockchain_loan_id)
+  `);
+  await runRaw(`
+    UPDATE loans
+    SET blockchain_loan_id = COALESCE(blockchain_loan_id, contractLoanId)
+  `);
 
   if (await tableExists('users')) {
     await runRaw("UPDATE users SET role = 'borrower' WHERE role IS NULL OR TRIM(role) = ''");
