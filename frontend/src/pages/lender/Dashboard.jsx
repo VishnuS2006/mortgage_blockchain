@@ -60,6 +60,7 @@ export default function LenderDashboard() {
   const pendingLoans = loans.filter((loan) => loan.status === 'Pending');
   const approvedLoans = loans.filter((loan) => loan.status === 'Approved');
   const fundedLoans = loans.filter((loan) => loan.status === 'Active');
+  const completedLoans = loans.filter((loan) => loan.status === 'Completed');
   const rejectedLoans = loans.filter((loan) => loan.status === 'Rejected');
   const totalInvestedAmount = investments
     .filter((investment) => investment.status !== 'failed')
@@ -113,6 +114,13 @@ export default function LenderDashboard() {
           <div>
             <span className="stat-value">{fundedLoans.length}</span>
             <span className="stat-label">Funded</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <FaChartLine className="stat-icon" style={{ color: '#a78bfa' }} />
+          <div>
+            <span className="stat-value">{completedLoans.length}</span>
+            <span className="stat-label">Completed</span>
           </div>
         </div>
         <div className="stat-card">

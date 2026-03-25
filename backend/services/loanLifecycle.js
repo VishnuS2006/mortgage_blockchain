@@ -221,24 +221,43 @@ export async function getLoanStatusSummary(loanId, borrowerId = null) {
   const totalEmis = emis.length;
   const paidEmis = emis.filter((emi) => Number(emi.paid) === 1).length;
   const nextEmi = emis.find((emi) => Number(emi.paid) === 0) || null;
+  const isCompleted = totalEmis > 0 && paidEmis >= totalEmis;
+
+  if (isCompleted && loan.status !== 'Completed' && loan.status !== 'Cancelled') {
+    const completedAt = new Date().toISOString();
+    await db.prepare(`
+      UPDATE loans
+      SET status = 'Completed',
+          remaining_balance = 0,
+          completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+          defaulted_at = NULL
+      WHERE id = ?
+    `).run(loanId);
+    loan.status = 'Completed';
+    loan.remaining_balance = 0;
+    loan.completed_at = loan.completed_at || completedAt;
+    loan.defaulted_at = null;
+  }
+
   const isDefaulted = Boolean(
     nextEmi &&
+    !isCompleted &&
     new Date(nextEmi.due_date).getTime() + (7 * 24 * 60 * 60 * 1000) < Date.now() &&
     loan.status === 'Active'
   );
 
   return {
     loanId: loan.id,
-    status: isDefaulted ? 'Defaulted' : loan.status,
+    status: isCompleted ? 'Completed' : (isDefaulted ? 'Defaulted' : loan.status),
     borrowerName: loan.borrower_name,
     borrowerEmail: loan.borrower_email,
     propertyName: loan.property_name,
     totalEmis,
     paidEmis,
-    pendingEmis: totalEmis - paidEmis,
+    pendingEmis: Math.max(totalEmis - paidEmis, 0),
     nextEmi,
     amountPaid: Number(loan.amount_paid || 0),
-    remainingBalance: Number(loan.remaining_balance || 0),
+    remainingBalance: isCompleted ? 0 : Number(loan.remaining_balance || 0),
     fundedAt: loan.funded_at,
     completedAt: loan.completed_at,
     defaultedAt: loan.defaulted_at,

@@ -76,6 +76,11 @@ const PAGE_CONFIG = {
     description: 'Funded loans have already been disbursed. Actions are disabled.',
     apiStatus: 'funded',
   },
+  completed: {
+    title: 'Completed Loans',
+    description: 'Completed loans have all EMI payments cleared and are retained for lifecycle tracking.',
+    apiStatus: 'completed',
+  },
   rejected: {
     title: 'Rejected Loans',
     description: 'Rejected loans remain visible for audit and borrower follow-up.',
@@ -249,8 +254,6 @@ export default function LoanBoard({ view = 'all' }) {
           setTxState(loan.id, type, 'pending', tx.hash);
           await tx.wait();
           setTxState(loan.id, type, 'confirmed', tx.hash);
-        } catch (contractErr) {
-          throw contractErr;
         } finally {
           toast.dismiss(`authorize:${loan.id}`);
         }
@@ -399,6 +402,7 @@ export default function LoanBoard({ view = 'all' }) {
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
             <option value="funded">Funded</option>
+            <option value="completed">Completed</option>
             <option value="rejected">Rejected</option>
           </select>
           <input
@@ -529,6 +533,12 @@ export default function LoanBoard({ view = 'all' }) {
                 {loan.status === 'Active' && (
                   <div className="tiny-text" style={{ marginTop: '0.8rem' }}>
                     Funding completed. Approval and funding actions are disabled for funded loans.
+                  </div>
+                )}
+
+                {loan.status === 'Completed' && (
+                  <div className="tiny-text" style={{ marginTop: '0.8rem' }}>
+                    All EMI payments are complete. This loan is in completed lifecycle state.
                   </div>
                 )}
 

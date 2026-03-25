@@ -29,6 +29,31 @@ function normalizePendingEmi(pendingEmi) {
   };
 }
 
+function getPaidEmiCount(emiSchedule = []) {
+  return emiSchedule.filter((emi) => String(emi.status).toLowerCase() === 'paid' || Number(emi.paid) === 1).length;
+}
+
+function getTotalEmiCount(emiSchedule = [], loanLifecycle = null) {
+  return emiSchedule.length || Number(loanLifecycle?.totalEmis || 0);
+}
+
+function isLoanCompletedState(loan, loanLifecycle, emiSchedule = []) {
+  if (!loan) {
+    return false;
+  }
+
+  const paidEmis = Number(loanLifecycle?.paidEmis ?? getPaidEmiCount(emiSchedule));
+  const totalEmis = Number(getTotalEmiCount(emiSchedule, loanLifecycle));
+  const completedBySchedule = totalEmis > 0 && paidEmis >= totalEmis;
+
+  return (
+    loan.status === 'Completed' ||
+    loanLifecycle?.status === 'Completed' ||
+    Number(loan.remaining_balance || 0) <= 0 ||
+    completedBySchedule
+  );
+}
+
 export default function Payment() {
   const [searchParams] = useSearchParams();
   const preselectedLoanId = searchParams.get('loanId');
@@ -41,6 +66,8 @@ export default function Payment() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [txStatus, setTxStatus] = useState(null);
+  const isLoanCompleted = isLoanCompletedState(selectedLoan, loanLifecycle, emiSchedule);
+  const canPayLoan = Boolean(selectedLoan?.status === 'Active' && !isLoanCompleted);
 
   const fetchLoans = useCallback(async () => {
     try {
@@ -114,8 +141,20 @@ export default function Payment() {
   };
 
   const handlePayEMI = async () => {
+    if (!selectedLoan) {
+      toast.error('Select a loan first');
+      return;
+    }
+
     if (!account) {
       toast.error('Connect wallet first');
+      return;
+    }
+
+    if (isLoanCompletedState(selectedLoan, loanLifecycle, emiSchedule)) {
+      toast.success('This loan is already completed. Refreshing status...');
+      await fetchLoans();
+      await refreshSelectedLoan();
       return;
     }
 
@@ -142,6 +181,15 @@ export default function Payment() {
       const onChainLoan = await loanContract.viewLoanDetails(contractLoanId);
       const onChainStatus = getLoanStatusLabel(onChainLoan.status);
 
+      if (onChainStatus === 'Completed') {
+        toast.dismiss('pay');
+        toast.success('Loan is already completed on-chain. Refreshing status...');
+        await fetchLoans();
+        await refreshSelectedLoan();
+        setTxStatus('confirmed');
+        return;
+      }
+
       if (onChainStatus !== 'Active') {
         throw new Error(`On-chain loan is ${onChainStatus.toLowerCase()}, not active`);
       }
@@ -151,7 +199,12 @@ export default function Payment() {
       );
 
       if (!pendingEmi || pendingEmi.index < 0 || pendingEmi.amount <= 0n) {
-        throw new Error('This loan has no EMI amount due');
+        toast.dismiss('pay');
+        toast.success('All EMI payments are already cleared. Refreshing status...');
+        await fetchLoans();
+        await refreshSelectedLoan();
+        setTxStatus('confirmed');
+        return;
       }
 
       const tx = await loanContract.payEMI(contractLoanId, pendingEmi.index, {
@@ -330,7 +383,7 @@ export default function Payment() {
               </div>
             )}
 
-            {selectedLoan.status === 'Active' && (
+            {canPayLoan && (
               !account ? (
                 <button className="btn btn-primary" onClick={connectWallet}>Connect Wallet</button>
               ) : (
@@ -346,7 +399,7 @@ export default function Payment() {
               </div>
             )}
 
-            {(loanLifecycle?.status === 'Completed' || selectedLoan.remaining_balance <= 0) && (
+            {isLoanCompleted && (
               <div className="alert alert-success">
                 <FaCheckCircle /> This loan is fully paid and the collateral has been released back to you on-chain.
               </div>
@@ -367,7 +420,7 @@ export default function Payment() {
             emiSchedule={emiSchedule}
             loanLifecycle={loanLifecycle}
             onPay={handlePayEMI}
-            canPay={selectedLoan.status === 'Active' && Boolean(account)}
+            canPay={canPayLoan && Boolean(account)}
             isPaying={paying}
           />
         </div>

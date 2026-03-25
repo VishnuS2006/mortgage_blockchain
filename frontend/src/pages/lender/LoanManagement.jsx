@@ -234,6 +234,7 @@ export default function LoanManagement() {
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
             <option value="active">Active</option>
+            <option value="completed">Completed</option>
           </select>
           <input
             type="search"

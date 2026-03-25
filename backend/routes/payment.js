@@ -29,9 +29,21 @@ async function recordLoanPayment(userId, loanId, amount, txHash) {
   ).run(loanId, paymentAmount, txHash);
 
   const paidEmi = await markNextEmiPaid(loanId, txHash, new Date());
+  const schedule = await getEmiSchedule(loanId);
+  const totalEmis = schedule.length;
+  const paidEmis = schedule.filter((emi) => Number(emi.paid) === 1).length;
+  const allEmisPaid = totalEmis > 0 && paidEmis >= totalEmis;
+
+  const totalPayable = Number(loan.total_payable || 0);
   const newAmountPaid = Number(loan.amount_paid || 0) + paymentAmount;
-  const newRemaining = Number(loan.total_payable || 0) - newAmountPaid;
-  const newStatus = newRemaining <= 0 ? 'Completed' : 'Active';
+  const newRemaining = totalPayable - newAmountPaid;
+  const isSettledByAmount = newRemaining <= 0.000000001;
+  const isCompleted = allEmisPaid || isSettledByAmount;
+  const normalizedAmountPaid = isCompleted && totalPayable > 0
+    ? Math.max(newAmountPaid, totalPayable)
+    : newAmountPaid;
+  const normalizedRemaining = isCompleted ? 0 : Math.max(0, newRemaining);
+  const newStatus = isCompleted ? 'Completed' : 'Active';
 
   await db.prepare(`
     UPDATE loans
@@ -43,15 +55,13 @@ async function recordLoanPayment(userId, loanId, amount, txHash) {
         defaulted_at = CASE WHEN ? = 'Defaulted' THEN CURRENT_TIMESTAMP ELSE defaulted_at END
     WHERE id = ?
   `).run(
-    newAmountPaid,
-    Math.max(0, newRemaining),
+    normalizedAmountPaid,
+    normalizedRemaining,
     newStatus,
     newStatus,
     newStatus,
     loanId
   );
-
-  const schedule = await getEmiSchedule(loanId);
 
   return {
     status: 201,
@@ -62,8 +72,8 @@ async function recordLoanPayment(userId, loanId, amount, txHash) {
         loanId,
         amount: paymentAmount,
         txHash,
-        amountPaid: newAmountPaid,
-        remainingBalance: Math.max(0, newRemaining),
+        amountPaid: normalizedAmountPaid,
+        remainingBalance: normalizedRemaining,
         loanStatus: newStatus,
         emi: paidEmi,
       },
