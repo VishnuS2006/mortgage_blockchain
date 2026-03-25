@@ -83,4 +83,69 @@ router.get('/:id', authMiddleware, roleMiddleware('borrower'), async (req, res) 
   }
 });
 
+router.get('/loan/:loanId', authMiddleware, async (req, res) => {
+  try {
+    const loanId = Number.parseInt(req.params.loanId, 10);
+
+    if (!Number.isInteger(loanId) || loanId <= 0) {
+      return res.status(400).json({ error: 'Invalid loan ID' });
+    }
+
+    const record = await db.prepare(
+      `
+        SELECT
+          l.id AS loanId,
+          l.borrower_id,
+          l.nft_id,
+          COALESCE(l.contractLoanId, l.blockchain_loan_id) AS contractLoanId,
+          p.id AS propertyId,
+          p.name,
+          p.location,
+          p.price,
+          p.description,
+          p.image_ipfs,
+          p.metadata_ipfs,
+          p.nft_token_id,
+          p.tx_hash,
+          COALESCE(NULLIF(p.metadata_ipfs, ''), NULLIF(p.image_ipfs, '')) AS ipfsHash,
+          COALESCE(NULLIF(p.metadata_ipfs, ''), NULLIF(p.image_ipfs, '')) AS property_ipfs
+        FROM loans l
+        LEFT JOIN properties p ON p.id = l.property_id
+        WHERE l.id = ?
+      `
+    ).get(loanId);
+
+    if (!record || !record.propertyId) {
+      return res.status(404).json({ error: 'Property not found for this loan' });
+    }
+
+    if (req.user.role !== 'lender' && record.borrower_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Not authorized to view this property' });
+    }
+
+    return res.json({
+      property: {
+        id: record.propertyId,
+        loanId: record.loanId,
+        name: record.name,
+        location: record.location,
+        price: record.price,
+        description: record.description,
+        image_ipfs: record.image_ipfs,
+        metadata_ipfs: record.metadata_ipfs,
+        ipfsHash: record.ipfsHash,
+        propertyIPFSHash: record.ipfsHash,
+        property_ipfs: record.property_ipfs,
+        nftTokenId: record.nft_token_id,
+        txHash: record.tx_hash,
+        nftId: record.nft_id,
+        contractLoanId: record.contractLoanId,
+      },
+    });
+  } catch (err) {
+    console.error('Get property for loan error:', err);
+    return res.status(500).json({ error: 'Internal server error', details: err.message });
+  }
+});
+
 export default router;

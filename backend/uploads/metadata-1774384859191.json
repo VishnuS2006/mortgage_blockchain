@@ -1,0 +1,15 @@
+{
+  "name": "PSG Tech college",
+  "description": "College",
+  "image": "http://localhost:5000/uploads/1774384859159-Demonslayer.jpg",
+  "attributes": [
+    {
+      "trait_type": "Location",
+      "value": "Peelamedu, coimbatore"
+    },
+    {
+      "trait_type": "Price",
+      "value": "50 ETH"
+    }
+  ]
+}

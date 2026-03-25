@@ -12,6 +12,15 @@ function addDays(date, days) {
   return new Date(date.getTime() + (days * 24 * 60 * 60 * 1000));
 }
 
+function deriveEmiStatus(emi, now = new Date()) {
+  if (Number(emi.paid) === 1) {
+    return 'paid';
+  }
+
+  const dueTime = new Date(emi.due_date || emi.dueDate).getTime();
+  return dueTime < now.getTime() ? 'overdue' : 'pending';
+}
+
 function buildEmiSchedule(loan, firstDueDate = new Date()) {
   const durationMonths = Number(loan.duration_months || 0);
   const totalPayable = Number(loan.total_payable || 0);
@@ -84,7 +93,7 @@ export async function ensureEmiScheduleForLoan(loanId, firstDueDate = new Date()
 }
 
 export async function getEmiSchedule(loanId) {
-  return db.prepare(`
+  const schedule = await db.prepare(`
     SELECT
       id,
       loan_id,
@@ -100,6 +109,21 @@ export async function getEmiSchedule(loanId) {
     WHERE loan_id = ?
     ORDER BY emi_index ASC
   `).all(loanId);
+
+  const now = new Date();
+  for (const emi of schedule) {
+    const nextStatus = deriveEmiStatus(emi, now);
+    if (emi.status !== nextStatus) {
+      await db.prepare(`
+        UPDATE emis
+        SET status = ?
+        WHERE id = ?
+      `).run(nextStatus, emi.id);
+      emi.status = nextStatus;
+    }
+  }
+
+  return schedule;
 }
 
 export async function markNextEmiPaid(loanId, txHash, paidAt = new Date()) {
@@ -114,6 +138,44 @@ export async function markNextEmiPaid(loanId, txHash, paidAt = new Date()) {
 
   if (!emi) {
     return null;
+  }
+
+  const paidAtIso = toIsoDate(paidAt);
+  await db.prepare(`
+    UPDATE emis
+    SET paid = 1,
+        paid_at = ?,
+        tx_hash = ?,
+        status = 'paid'
+    WHERE id = ?
+  `).run(paidAtIso, txHash, emi.id);
+
+  return {
+    ...emi,
+    paid: 1,
+    paid_at: paidAtIso,
+    tx_hash: txHash,
+    status: 'paid',
+  };
+}
+
+export async function markSpecificEmiPaid(loanId, emiId, txHash, paidAt = new Date()) {
+  const emi = await db.prepare(`
+    SELECT *
+    FROM emis
+    WHERE id = ?
+      AND loan_id = ?
+  `).get(emiId, loanId);
+
+  if (!emi) {
+    throw new Error('EMI not found');
+  }
+
+  if (Number(emi.paid) === 1) {
+    return {
+      ...emi,
+      status: 'paid',
+    };
   }
 
   const paidAtIso = toIsoDate(paidAt);

@@ -83,20 +83,32 @@ router.post('/record', authMiddleware, roleMiddleware('borrower'), async (req, r
   }
 });
 
-router.get('/loan/:loanId', authMiddleware, roleMiddleware('borrower'), async (req, res) => {
+router.get('/loan/:loanId', authMiddleware, async (req, res) => {
   try {
-    const loan = await db.prepare(`
-      SELECT id
-      FROM loans
-      WHERE id = ? AND borrower_id = ?
-    `).get(req.params.loanId, req.user.userId);
+    const loanId = Number(req.params.loanId);
+    if (!loanId) {
+      return res.status(400).json({ error: 'Loan ID must be numeric' });
+    }
+
+    const loan = req.user.role === 'lender'
+      ? await db.prepare(`
+          SELECT id
+          FROM loans
+          WHERE id = ?
+        `).get(loanId)
+      : await db.prepare(`
+          SELECT id
+          FROM loans
+          WHERE id = ? AND borrower_id = ?
+        `).get(loanId, req.user.userId);
+
     if (!loan) {
       return res.status(404).json({ error: 'Loan not found' });
     }
 
     const payments = await db.prepare(
       'SELECT * FROM payments WHERE loan_id = ? ORDER BY created_at DESC'
-    ).all(req.params.loanId);
+    ).all(loanId);
 
     res.json({ payments });
   } catch (err) {
