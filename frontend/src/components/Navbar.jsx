@@ -1,10 +1,12 @@
-﻿import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletRuntimeContext';
 import {
   FaBuilding,
   FaChartLine,
   FaCreditCard,
+  FaEthereum,
   FaFileContract,
   FaHome,
   FaSignOutAlt,
@@ -17,7 +19,21 @@ import './NavbarOverrides.css';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { account, balance, connectWallet, isConnecting, isWalletMismatch } = useWallet();
+  const {
+    account,
+    balance,
+    chainId,
+    networkName,
+    connectionStatus,
+    registeredWallet,
+    connectWallet,
+    disconnectWallet,
+    isConnecting,
+    isWalletMismatch,
+    isWrongNetwork,
+  } = useWallet();
+  const [isWalletMenuOpen, setIsWalletMenuOpen] = useState(false);
+  const walletMenuRef = useRef(null);
   const navigate = useNavigate();
   const homePath = getDefaultRouteForRole(user?.role);
   const links = user?.role === 'lender'
@@ -40,6 +56,19 @@ export default function Navbar() {
   };
 
   const shortAddr = (addr) => addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '';
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (walletMenuRef.current && !walletMenuRef.current.contains(event.target)) {
+        setIsWalletMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, []);
 
   return (
     <nav className="navbar">
@@ -64,14 +93,95 @@ export default function Navbar() {
       <div className="navbar-actions">
         {user && (
           <>
-            <button
-              className={`wallet-btn ${isWalletMismatch ? 'mismatch' : account ? 'connected' : ''}`}
-              onClick={connectWallet}
-              disabled={isConnecting}
-            >
-              <FaWallet />
-              {isConnecting ? 'Connecting...' : account ? `${shortAddr(account)}${balance ? ` | ${formatEthAmount(balance)}` : ''}` : 'Connect Wallet'}
-            </button>
+            <div className="wallet-menu" ref={walletMenuRef}>
+              <button
+                className={`wallet-btn ${isWalletMismatch ? 'mismatch' : account ? 'connected' : ''}`}
+                onClick={async () => {
+                  if (!account) {
+                    const connected = await connectWallet();
+                    if (!connected) {
+                      return;
+                    }
+                  }
+
+                  setIsWalletMenuOpen((current) => !current);
+                }}
+                disabled={isConnecting}
+              >
+                <FaEthereum />
+                {isConnecting ? 'Connecting...' : account ? `MetaMask | ${formatEthAmount(balance || 0)}` : 'MetaMask'}
+              </button>
+
+              {isWalletMenuOpen && (
+                <div className="wallet-popover">
+                  <div className="wallet-popover-header">
+                    <strong>MetaMask</strong>
+                    <span>{connectionStatus}</span>
+                  </div>
+
+                  <div className="wallet-popover-grid">
+                    <div className="wallet-popover-item">
+                      <span>Address</span>
+                      <strong>{account || 'Not connected'}</strong>
+                    </div>
+                    <div className="wallet-popover-item">
+                      <span>Balance</span>
+                      <strong>{account ? formatEthAmount(balance || 0) : 'Unavailable'}</strong>
+                    </div>
+                    <div className="wallet-popover-item">
+                      <span>Network</span>
+                      <strong>{networkName || 'Unknown'}</strong>
+                    </div>
+                    <div className="wallet-popover-item">
+                      <span>Status</span>
+                      <strong>{connectionStatus}</strong>
+                    </div>
+                  </div>
+
+                  {registeredWallet && (
+                    <div className="wallet-popover-note">
+                      Registered wallet: {shortAddr(registeredWallet)}
+                    </div>
+                  )}
+
+                  {isWalletMismatch && (
+                    <div className="wallet-popover-warning">
+                      Connected wallet does not match the registered account wallet.
+                    </div>
+                  )}
+
+                  {isWrongNetwork && (
+                    <div className="wallet-popover-warning">
+                      Current chain ID {chainId || 'Unknown'} is not the expected app network.
+                    </div>
+                  )}
+
+                  <div className="wallet-popover-actions">
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={async () => {
+                        await connectWallet();
+                        setIsWalletMenuOpen(true);
+                      }}
+                    >
+                      {account ? 'Reconnect' : 'Connect'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => {
+                        disconnectWallet();
+                        setIsWalletMenuOpen(false);
+                      }}
+                      disabled={!account}
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             {isWalletMismatch && <span className="mismatch-badge">Wallet mismatch</span>}
             <span className="user-name">{user.name} ({user.role})</span>
             <button className="logout-btn" onClick={handleLogout}>

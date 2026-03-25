@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletRuntimeContext';
 import api from '../../utils/api';
@@ -38,6 +38,7 @@ function getPropertyIpfsUrl(target) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const {
     account,
@@ -295,11 +296,11 @@ export default function Dashboard() {
                           Reclaim NFT
                         </button>
                       )}
-                      {getPropertyIpfsUrl(loan) && (
+                      {(loan.property_name || getPropertyIpfsUrl(loan)) && (
                         <button
                           type="button"
                           className="btn btn-sm btn-primary"
-                          onClick={() => window.open(getPropertyIpfsUrl(loan), '_blank', 'noopener,noreferrer')}
+                          onClick={() => navigate(`/property/${loan.id}`)}
                         >
                           View Property
                         </button>

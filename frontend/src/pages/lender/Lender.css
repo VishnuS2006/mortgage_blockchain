@@ -77,6 +77,21 @@
 
 .loan-actions {
   margin-top: auto;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.loan-actions button {
+  min-width: 138px;
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .loan-actions button {
+    min-width: unset;
+    flex: 1 1 100%;
+  }
 }
 
 .btn-secondary,
@@ -119,14 +134,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
-  align-items: stretch;
+  align-items: start;
 }
 
 .loan-review-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 100%;
+  align-self: stretch;
+  min-height: 420px;
   border-radius: 18px;
   border: 1px solid rgba(148, 163, 184, 0.14);
   background: rgba(15, 23, 42, 0.78);

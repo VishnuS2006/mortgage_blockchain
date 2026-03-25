@@ -1,4 +1,5 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { FaCheck, FaExternalLinkAlt, FaTimes, FaWallet } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -37,6 +38,23 @@ function getPropertyIpfsUrl(loan) {
   return `https://gateway.pinata.cloud/ipfs/${ipfsHash.replace(/^ipfs:\/\//, '')}`;
 }
 
+function isOnlyLenderError(error) {
+  const message = String(error?.reason || error?.shortMessage || error?.message || '');
+  return /only lender/i.test(message);
+}
+
+async function authorizeLenderWallet(walletAddress) {
+  try {
+    return await api.post('/loans/authorize-lender-wallet', { walletAddress });
+  } catch (error) {
+    if (error.response?.status !== 404) {
+      throw error;
+    }
+
+    return api.post('/lender/authorize-lender-wallet', { walletAddress });
+  }
+}
+
 const PAGE_CONFIG = {
   all: {
     title: 'Loan Management',
@@ -66,6 +84,7 @@ const PAGE_CONFIG = {
 };
 
 export default function LoanBoard({ view = 'all' }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { account, connectWallet, registeredWallet } = useWallet();
   const [loans, setLoans] = useState([]);
@@ -134,7 +153,12 @@ export default function LoanBoard({ view = 'all' }) {
       throw new Error('Connected wallet does not match your registered lender wallet');
     }
 
-    if (user?.role !== 'lender') {
+    if (!user) {
+      throw new Error('User session not found. Please login again.');
+    }
+
+    const userRole = String(user.role || '').trim().toLowerCase();
+    if (userRole !== 'lender') {
       throw new Error('Only lender accounts can review loans');
     }
 
@@ -157,55 +181,79 @@ export default function LoanBoard({ view = 'all' }) {
         const provider = await getProvider();
         const signer = await provider.getSigner();
         const contract = await getMortgageLoanContract(signer);
-        const onChainLoan = await contract.viewLoanDetails(contractLoanId);
-        const onChainStatus = getLoanStatusLabel(onChainLoan.status);
 
-        if (type === 'approve' && onChainStatus !== 'Pending') {
-          throw new Error(`On-chain loan is ${onChainStatus.toLowerCase()}, not pending`);
-        }
+        try {
+          const executeReview = async () => {
+            const onChainLoan = await contract.viewLoanDetails(contractLoanId);
+            const onChainStatus = getLoanStatusLabel(onChainLoan.status);
 
-        if (type === 'reject' && !['Pending', 'Approved'].includes(onChainStatus)) {
-          throw new Error(`On-chain loan is ${onChainStatus.toLowerCase()}, not reviewable`);
-        }
-
-        let gasEstimate;
-
-        if (type === 'approve') {
-          try {
-            gasEstimate = await contract.approveLoan.estimateGas(contractLoanId);
-          } catch (estimateErr) {
-            const message = String(
-              estimateErr?.reason ||
-              estimateErr?.shortMessage ||
-              estimateErr?.message ||
-              ''
-            );
-
-            if (/property not verified/i.test(message) && typeof contract.verifyPropertyForLoan === 'function') {
-              setTxState(loan.id, 'verify', 'signing');
-              const verifyTx = await contract.verifyPropertyForLoan(contractLoanId);
-              setTxState(loan.id, 'verify', 'pending', verifyTx.hash);
-              await verifyTx.wait();
-              setTxState(loan.id, 'verify', 'confirmed', verifyTx.hash);
-              toast.success('Property verified on-chain');
-              gasEstimate = await contract.approveLoan.estimateGas(contractLoanId);
-            } else {
-              throw estimateErr;
+            if (type === 'approve' && onChainStatus !== 'Pending') {
+              throw new Error(`On-chain loan is ${onChainStatus.toLowerCase()}, not pending`);
             }
+
+            if (type === 'reject' && !['Pending', 'Approved'].includes(onChainStatus)) {
+              throw new Error(`On-chain loan is ${onChainStatus.toLowerCase()}, not reviewable`);
+            }
+
+            let gasEstimate;
+
+            if (type === 'approve') {
+              try {
+                gasEstimate = await contract.approveLoan.estimateGas(contractLoanId);
+              } catch (estimateErr) {
+                const message = String(
+                  estimateErr?.reason ||
+                  estimateErr?.shortMessage ||
+                  estimateErr?.message ||
+                  ''
+                );
+
+                if (/property not verified/i.test(message) && typeof contract.verifyPropertyForLoan === 'function') {
+                  setTxState(loan.id, 'verify', 'signing');
+                  const verifyTx = await contract.verifyPropertyForLoan(contractLoanId);
+                  setTxState(loan.id, 'verify', 'pending', verifyTx.hash);
+                  await verifyTx.wait();
+                  setTxState(loan.id, 'verify', 'confirmed', verifyTx.hash);
+                  toast.success('Property verified on-chain');
+                  gasEstimate = await contract.approveLoan.estimateGas(contractLoanId);
+                } else {
+                  throw estimateErr;
+                }
+              }
+            } else {
+              gasEstimate = await contract.rejectLoan.estimateGas(contractLoanId);
+            }
+
+            return (
+              type === 'approve'
+                ? contract.approveLoan(contractLoanId, { gasLimit: (gasEstimate * 120n) / 100n })
+                : contract.rejectLoan(contractLoanId, { gasLimit: (gasEstimate * 120n) / 100n })
+            );
+          };
+
+          let tx;
+          try {
+            tx = await executeReview();
+          } catch (initialErr) {
+            if (!isOnlyLenderError(initialErr)) {
+              throw initialErr;
+            }
+
+            toast.loading('Authorizing lender wallet on-chain...', { id: `authorize:${loan.id}` });
+            await authorizeLenderWallet(connectedAccount);
+            toast.success('Lender wallet authorized. Retrying transaction...', { id: `authorize:${loan.id}` });
+            tx = await executeReview();
           }
-        } else {
-          gasEstimate = await contract.rejectLoan.estimateGas(contractLoanId);
+
+          txHash = tx.hash;
+          setTxState(loan.id, type, 'pending', tx.hash);
+          await tx.wait();
+          setTxState(loan.id, type, 'confirmed', tx.hash);
+        } catch (contractErr) {
+          throw contractErr;
+        } finally {
+          toast.dismiss(`authorize:${loan.id}`);
         }
-
-        const tx =
-          type === 'approve'
-            ? await contract.approveLoan(contractLoanId, { gasLimit: (gasEstimate * 120n) / 100n })
-            : await contract.rejectLoan(contractLoanId, { gasLimit: (gasEstimate * 120n) / 100n });
-
-        txHash = tx.hash;
-        setTxState(loan.id, type, 'pending', tx.hash);
-        await tx.wait();
-        setTxState(loan.id, type, 'confirmed', tx.hash);
       }
 
       const endpoint = type === 'approve' ? `/loans/${loan.id}/approve` : `/loans/${loan.id}/reject`;
@@ -231,30 +279,79 @@ export default function LoanBoard({ view = 'all' }) {
       return;
     }
 
+    if (!loan || !loan.id) {
+      toast.error('Loan data is missing or corrupted. Please reload the page.');
+      return;
+    }
+
     setActiveAction(`fund:${loan.id}`);
 
     try {
+      // Verify loan still exists in backend before attempting fund
+      try {
+        await api.get(`/loans/${loan.id}`);
+      } catch (verifyErr) {
+        if (verifyErr.response?.status === 404) {
+          toast.error('Loan not found in database. It may have been deleted or database was reset. Please refresh the page to see current loans.');
+          setTxState(loan.id, 'fund', 'failed');
+          await loadLoans();
+          return;
+        }
+        throw verifyErr;
+      }
+
       const connectedAccount = await ensureWalletReady();
       setTxState(loan.id, 'fund', 'signing');
 
       const provider = await getProvider();
       const signer = await provider.getSigner();
       const contract = await getMortgageLoanContract(signer);
-      const onChainLoan = await contract.viewLoanDetails(contractLoanId);
-      const onChainStatus = getLoanStatusLabel(onChainLoan.status);
+      const executeFunding = async () => {
+        const onChainLoan = await contract.viewLoanDetails(contractLoanId);
+        const onChainStatus = getLoanStatusLabel(onChainLoan.status);
 
-      if (onChainStatus !== 'Approved') {
-        throw new Error(`On-chain loan is ${onChainStatus.toLowerCase()}, not approved`);
+        if (onChainStatus !== 'Approved') {
+          const hint = loan.status === 'Approved'
+            ? 'Loan is approved in DB but not on-chain; run approve on-chain with an authorized lender first.'
+            : 'Loan must be approved before funding.';
+
+          toast.error(`Cannot fund loan: ${hint}`);
+          setTxState(loan.id, 'fund', 'failed');
+          return null;
+        }
+
+        const loanAmountValue = onChainLoan.loanAmount;
+        if (!loanAmountValue || loanAmountValue.toString() === '0') {
+          throw new Error('Loan amount is zero or invalid on the chain, cannot fund.');
+        }
+
+        const gasEstimate = await contract.fundLoan.estimateGas(contractLoanId, {
+          value: loanAmountValue,
+        });
+
+        return contract.fundLoan(contractLoanId, {
+          value: loanAmountValue,
+          gasLimit: (gasEstimate * 120n) / 100n,
+        });
+      };
+
+      let tx;
+      try {
+        tx = await executeFunding();
+      } catch (initialErr) {
+        if (!isOnlyLenderError(initialErr)) {
+          throw initialErr;
+        }
+
+        toast.loading('Authorizing lender wallet on-chain...', { id: `authorize:${loan.id}` });
+        await authorizeLenderWallet(connectedAccount);
+        toast.success('Lender wallet authorized. Retrying funding...', { id: `authorize:${loan.id}` });
+        tx = await executeFunding();
       }
 
-      const gasEstimate = await contract.fundLoan.estimateGas(contractLoanId, {
-        value: onChainLoan.loanAmount,
-      });
-
-      const tx = await contract.fundLoan(contractLoanId, {
-        value: onChainLoan.loanAmount,
-        gasLimit: (gasEstimate * 120n) / 100n,
-      });
+      if (!tx) {
+        return;
+      }
 
       setTxState(loan.id, 'fund', 'pending', tx.hash);
       const receipt = await tx.wait();
@@ -268,13 +365,16 @@ export default function LoanBoard({ view = 'all' }) {
       });
 
       setTxState(loan.id, 'fund', 'confirmed', receipt.hash);
-      toast.success('Funding Successful');
+      toast.success('Funding successful');
       await loadLoans();
     } catch (err) {
       console.error('Fund loan error:', err);
       setTxState(loan.id, 'fund', 'failed');
-      toast.error(err.response?.data?.error || err.reason || err.message || 'Transaction Failed');
+      const errorMsg = err.response?.data?.error || err.reason || err.message || 'Transaction failed';
+      console.error('Error details:', { errorMsg, err });
+      toast.error(errorMsg);
     } finally {
+      toast.dismiss(`authorize:${loan.id}`);
       setActiveAction('');
     }
   };
@@ -328,6 +428,7 @@ export default function LoanBoard({ view = 'all' }) {
             const statusMeta = getLoanStatusMeta(displayStatus);
             const isOwnApproval = loan.reviewed_by === user?.id;
             const propertyUrl = getPropertyIpfsUrl(loan);
+            const showEmiDetailsButton = ['Approved', 'Active', 'Completed', 'Defaulted'].includes(loan.status);
 
             return (
               <div key={loan.id} className="loan-review-card">
@@ -373,9 +474,18 @@ export default function LoanBoard({ view = 'all' }) {
                     <button
                       type="button"
                       className="btn-ghost"
-                      onClick={() => window.open(propertyUrl, '_blank', 'noopener,noreferrer')}
+                      onClick={() => navigate(`/property/${loan.id}`)}
                     >
                       <FaExternalLinkAlt /> View Property
+                    </button>
+                  )}
+                  {showEmiDetailsButton && (
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={() => navigate(`/lender/loan-emi/${loan.id}`)}
+                    >
+                      EMI Details
                     </button>
                   )}
                   {loan.status === 'Pending' && (

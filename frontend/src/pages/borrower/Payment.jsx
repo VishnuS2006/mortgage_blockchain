@@ -10,6 +10,7 @@ import {
 } from '../../utils/contract';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import EMIDashboard from '../../components/EMIDashboard';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatEther } from 'ethers';
 import { FaCheckCircle, FaClock, FaExternalLinkAlt } from 'react-icons/fa';
@@ -88,17 +89,28 @@ export default function Payment() {
       return;
     }
 
-    const updatedLoan = (await api.get(`/loans/${selectedLoan.id}`)).data.loan;
-    const [paymentsRes, emiRes, loanStatusRes] = await Promise.all([
+    const [loanRes, paymentsRes, emiRes, loanStatusRes] = await Promise.allSettled([
+      api.get(`/loans/${selectedLoan.id}`),
       api.get(`/payments/loan/${selectedLoan.id}`),
       api.get(`/emi/${selectedLoan.id}`),
       api.get('/loan-status', { params: { loanId: selectedLoan.id } }),
     ]);
 
-    setSelectedLoan(updatedLoan);
-    setPayments(paymentsRes.data.payments || []);
-    setEmiSchedule(emiRes.data.emiSchedule || []);
-    setLoanLifecycle(loanStatusRes.data.loanStatus || null);
+    if (loanRes.status === 'fulfilled') {
+      setSelectedLoan(loanRes.value.data.loan);
+    }
+
+    if (paymentsRes.status === 'fulfilled') {
+      setPayments(paymentsRes.value.data.payments || []);
+    }
+
+    if (emiRes.status === 'fulfilled') {
+      setEmiSchedule(emiRes.value.data.emiSchedule || []);
+    }
+
+    if (loanStatusRes.status === 'fulfilled') {
+      setLoanLifecycle(loanStatusRes.value.data.loanStatus || null);
+    }
   };
 
   const handlePayEMI = async () => {
@@ -154,11 +166,26 @@ export default function Payment() {
       toast.dismiss('confirm');
       toast.success('EMI paid successfully');
 
-      await api.post('/pay-emi', {
+      const syncPayload = {
         loanId: selectedLoan.id,
         amount: Number(formatEther(pendingEmi.amount)),
         txHash: receipt.hash,
-      });
+      };
+
+      let syncResponse;
+      try {
+        syncResponse = await api.post('/emi/pay', syncPayload);
+      } catch (syncErr) {
+        if (syncErr.response?.status === 404) {
+          syncResponse = await api.post('/pay-emi', syncPayload);
+        } else {
+          throw syncErr;
+        }
+      }
+
+      if (syncResponse?.data?.emiSchedule) {
+        setEmiSchedule(syncResponse.data.emiSchedule || []);
+      }
 
       await fetchLoans();
       await refreshSelectedLoan();
@@ -166,7 +193,7 @@ export default function Payment() {
       console.error('Pay EMI error:', err);
       toast.dismiss('pay');
       toast.dismiss('confirm');
-      toast.error(err.reason || err.message || 'Payment failed');
+      toast.error(err.response?.data?.error || err.reason || err.message || 'Payment failed');
       setTxStatus(null);
     } finally {
       setPaying(false);
@@ -336,31 +363,13 @@ export default function Payment() {
 
       {selectedLoan && emiSchedule.length > 0 && (
         <div className="section">
-          <h2>EMI Schedule</h2>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Amount</th>
-                  <th>Due Date</th>
-                  <th>Status</th>
-                  <th>Transaction</th>
-                </tr>
-              </thead>
-              <tbody>
-                {emiSchedule.map((emi) => (
-                  <tr key={emi.id}>
-                    <td>{Number(emi.emi_index) + 1}</td>
-                    <td>{Number(emi.amount).toFixed(4)} ETH</td>
-                    <td>{new Date(emi.due_date).toLocaleDateString()}</td>
-                    <td>{Number(emi.paid) === 1 ? 'Paid' : 'Pending'}</td>
-                    <td>{emi.tx_hash ? `${emi.tx_hash.slice(0, 10)}...${emi.tx_hash.slice(-8)}` : 'Pending'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <EMIDashboard
+            emiSchedule={emiSchedule}
+            loanLifecycle={loanLifecycle}
+            onPay={handlePayEMI}
+            canPay={selectedLoan.status === 'Active' && Boolean(account)}
+            isPaying={paying}
+          />
         </div>
       )}
 

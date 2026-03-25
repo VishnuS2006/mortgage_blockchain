@@ -16,7 +16,9 @@ import LoadingSpinner from './components/LoadingSpinner';
 import LenderDashboard from './pages/lender/Dashboard';
 import Investments from './pages/lender/Investments';
 import LoanBoard from './pages/lender/LoanBoard';
+import LoanEmiDetails from './pages/lender/LoanEmiDetails';
 import LenderWalletPage from './pages/lender/Wallet';
+import PropertyView from './pages/shared/PropertyView';
 import { getDefaultRouteForRole } from './utils/routing';
 import './index.css';
 
@@ -72,6 +74,10 @@ function AppRoutes() {
             element={<ProtectedRoute allowedRoles={['lender']}><Investments /></ProtectedRoute>}
           />
           <Route
+            path="/lender/loan-emi/:loanId"
+            element={<ProtectedRoute allowedRoles={['lender']}><LoanEmiDetails /></ProtectedRoute>}
+          />
+          <Route
             path="/lender/wallet"
             element={<ProtectedRoute allowedRoles={['lender']}><LenderWalletPage /></ProtectedRoute>}
           />
@@ -91,6 +97,10 @@ function AppRoutes() {
           <Route
             path="/payment"
             element={<ProtectedRoute allowedRoles={['borrower']}><Navigate to="/borrower/payment" replace /></ProtectedRoute>}
+          />
+          <Route
+            path="/property/:loanId"
+            element={<ProtectedRoute allowedRoles={['borrower', 'lender']}><PropertyView /></ProtectedRoute>}
           />
 
           <Route path="/" element={<RoleHomeRedirect />} />

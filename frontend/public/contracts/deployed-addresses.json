@@ -1,12 +1,12 @@
 {
-  "propertyNFT": "0x30114E64e32e680B3E4A236bBA453974d3d166Fa",
-  "mortgageCore": "0x917E54BC87a5042bAC4c2bCff594d36AC811F760",
-  "mortgageContract": "0x917E54BC87a5042bAC4c2bCff594d36AC811F760",
-  "mortgageLoan": "0x917E54BC87a5042bAC4c2bCff594d36AC811F760",
-  "propertyEscrow": "0x18e9d75a0A9cBA55174437BDc1Ee085CfFb29B66",
-  "loanRepayment": "0xeD0e6ACEE7B3360a527EBFf769d0BA1aF521cD1D",
-  "loanAutomation": "0x38CC53aBb1dEb06dE5d64c9161b996120809dA17",
-  "verification": "0x54fe91B04779Fb33Ae32066db954134e923CF35a",
+  "propertyNFT": "0x57FDbD113DBC4b6a9a775653e3E375405db74959",
+  "mortgageCore": "0xF006F6AC0e375313403Fe211CCE58120323907DA",
+  "mortgageContract": "0xF006F6AC0e375313403Fe211CCE58120323907DA",
+  "mortgageLoan": "0xF006F6AC0e375313403Fe211CCE58120323907DA",
+  "propertyEscrow": "0x986FBB8fF24b8a464E21bBeaC642c92Bd76Aedf4",
+  "loanRepayment": "0xA8bE7FB0b3645ADA11C969Fdc941D4b4dEd98284",
+  "loanAutomation": "0xd4e37a89d9b288f288a260F29e35c2CC0d8c2CFc",
+  "verification": "0x915f684ef7f5B094522d9eC5C977492a1d1cAEE7",
   "network": "sepolia",
   "chainId": "11155111",
   "explorerBaseUrl": "https://sepolia.etherscan.io",
@@ -14,5 +14,5 @@
   "authorizedLenders": [
     "0x5c5Eae1E55d3D206deA6e70bf37c1638E493C274"
   ],
-  "deployedAt": "2026-03-24T18:45:51.772Z"
+  "deployedAt": "2026-03-25T09:15:54.995Z"
 }

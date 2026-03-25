@@ -8,10 +8,6 @@ import { formatEthAmount } from './lenderHelpers';
 import '../borrower/Pages.css';
 import './Lender.css';
 
-function shortAddress(address) {
-  return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not linked';
-}
-
 export default function LenderWalletPage() {
   const { user } = useAuth();
   const {
@@ -78,7 +74,7 @@ export default function LenderWalletPage() {
       <div className="page-header">
         <div>
           <h1>Wallet Management</h1>
-          <p>Connect MetaMask, compare registered and active wallets, and relink when the lender record changes.</p>
+          <p>Monitor wallet readiness for funding, refresh balance, and review recent lending transactions.</p>
         </div>
       </div>
 
@@ -102,32 +98,15 @@ export default function LenderWalletPage() {
 
       <div className="wallet-grid">
         <div className="wallet-card">
-          <h3>Registered Wallet</h3>
-          <p>This value is stored in the backend user profile and included in the JWT payload.</p>
-          <div className="wallet-pill">{shortAddress(registeredWallet)}</div>
-        </div>
-
-        <div className="wallet-card">
-          <h3>Connected Wallet</h3>
-          <p>This is the active MetaMask address in the current browser session.</p>
-          <div className="wallet-pill">{shortAddress(account)}</div>
-          <p className="tiny-text" style={{ marginTop: '0.75rem' }}>
-            Balance: {balance ? formatEthAmount(balance) : 'Unavailable'}
-          </p>
-          <p className="tiny-text" style={{ marginTop: '0.45rem' }}>
-            Address: {account || 'Not connected'}
-          </p>
+          <h3>Balance</h3>
+          <p>Current MetaMask balance available for lender-side blockchain actions.</p>
+          <div className="wallet-pill">{balance ? formatEthAmount(balance) : 'Unavailable'}</div>
         </div>
 
         <div className="wallet-card">
           <h3>Network</h3>
-          <p>The lender funding flow checks chain ID before sending the funding transaction.</p>
-          <div className="wallet-pill">
-            Current: {chainId || 'Unknown'} / Expected: {expectedNetworkLabel || 'Sepolia'} ({expectedChainId || 'Unconfigured'})
-          </div>
-          <p className="tiny-text" style={{ marginTop: '0.75rem' }}>
-            Network: {networkName || 'Unknown'}
-          </p>
+          <p>The lender funding flow checks the active MetaMask network before sending transactions.</p>
+          <div className="wallet-pill">{networkName || expectedNetworkLabel || 'Unknown'}</div>
         </div>
 
         <div className="wallet-card">
@@ -171,7 +150,7 @@ export default function LenderWalletPage() {
           )}
         </div>
         <p className="tiny-text" style={{ marginTop: '0.9rem' }}>
-          Wallet linking stores the active address in the backend and optionally captures a signature as a lightweight ownership proof.
+          Use reconnect and relink only when the lender wallet session or backend wallet binding has changed.
         </p>
       </div>
 

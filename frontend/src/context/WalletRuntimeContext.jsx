@@ -216,6 +216,15 @@ export function WalletProvider({ children }) {
     }
   };
 
+  const disconnectWallet = () => {
+    setAccount(null);
+    setBalance(null);
+    setChainId(null);
+    setNetworkName('');
+    setSwitchError('');
+    toast.success('Wallet disconnected from the app');
+  };
+
   const registeredWallet = user?.walletAddress || null;
   const isWalletMismatch = Boolean(
     registeredWallet &&
@@ -247,6 +256,7 @@ export function WalletProvider({ children }) {
         isWrongNetwork,
         hasMetaMask: Boolean(window.ethereum),
         connectWallet,
+        disconnectWallet,
         switchNetwork,
         linkConnectedWallet,
         refreshBalance,

@@ -391,9 +391,15 @@
 /* ===== Apply Loan Layout ===== */
 .apply-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
-  align-items: flex-start;
+  align-items: stretch;
+}
+
+@media (min-width: 900px) {
+  .apply-layout {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .loan-preview .preview-grid {
@@ -592,6 +598,120 @@
   margin-top: 1rem;
 }
 
+.alert-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fda4af;
+  border: 1px solid rgba(239, 68, 68, 0.24);
+}
+
+.emi-stats-grid .stat-card {
+  min-height: 96px;
+}
+
+.emi-date-value {
+  font-size: 1.05rem;
+}
+
+.emi-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.emi-status-paid {
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.24);
+}
+
+.emi-status-pending {
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.24);
+}
+
+.emi-status-overdue {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.24);
+}
+
+.property-view-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.property-view-card {
+  height: 100%;
+}
+
+.property-view-image {
+  width: 100%;
+  min-height: 320px;
+  max-height: 460px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.property-view-fallback {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #94a3b8;
+  border: 1px dashed rgba(99, 102, 241, 0.22);
+  background: rgba(15, 23, 42, 0.32);
+}
+
+.property-view-description {
+  margin: 0 0 1.25rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.property-chain-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.property-chain-item {
+  text-align: left;
+}
+
+.address-chip {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+  color: #c4b5fd;
+}
+
+.property-map-wrap {
+  margin-top: 0.5rem;
+}
+
+.property-map-title {
+  margin: 0 0 0.8rem;
+  color: #e2e8f0;
+  font-size: 1rem;
+}
+
+.property-map-frame {
+  width: 100%;
+  min-height: 320px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.property-map-empty {
+  margin-top: 0.5rem;
+}
+
 /* ===== Empty State ===== */
 .empty-state {
   text-align: center;
@@ -620,5 +740,6 @@
   .form-grid { grid-template-columns: 1fr; }
   .apply-layout { grid-template-columns: 1fr; }
   .payment-layout { grid-template-columns: 1fr; }
+  .property-view-layout { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
