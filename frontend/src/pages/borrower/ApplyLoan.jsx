@@ -18,6 +18,8 @@ export default function ApplyLoan() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState([]);
+  const [lockedProperties, setLockedProperties] = useState([]);
+  const [propertiesLoading, setPropertiesLoading] = useState(true);
   const [form, setForm] = useState({
     propertyId: '',
     nftId: '',
@@ -27,10 +29,104 @@ export default function ApplyLoan() {
   });
 
   useEffect(() => {
-    api.get('/properties/my-properties').then((res) => {
-      setProperties(res.data.properties.filter((property) => property.nft_token_id));
-    });
-  }, []);
+    let cancelled = false;
+
+    const loadEligibleProperties = async () => {
+      setPropertiesLoading(true);
+
+      try {
+        const [propertyRes, loansRes] = await Promise.all([
+          api.get('/properties/my-properties'),
+          api.get('/loans/my-loans'),
+        ]);
+        const dbProperties = propertyRes.data.properties.filter((property) => property.nft_token_id);
+        const borrowerLoans = loansRes.data.loans || [];
+        const latestLoanByNftId = new Map();
+        const visibleLockedStatuses = new Set(['Pending', 'Rejected']);
+
+        borrowerLoans.forEach((loan) => {
+          if (!loan.nft_id) {
+            return;
+          }
+
+          const existing = latestLoanByNftId.get(Number(loan.nft_id));
+          if (!existing || Number(loan.id) > Number(existing.id)) {
+            latestLoanByNftId.set(Number(loan.nft_id), loan);
+          }
+        });
+
+        if (!account) {
+          if (!cancelled) {
+            setProperties(dbProperties);
+            setLockedProperties([]);
+          }
+          return;
+        }
+
+        await ensureSupportedNetwork();
+        const provider = await getProvider();
+        const nftContract = await getPropertyNFTContract(provider);
+        const addresses = getContractAddresses();
+        const escrowAddress = String(addresses?.propertyEscrow || '').toLowerCase();
+
+        const ownedProperties = [];
+        const escrowLockedProperties = [];
+
+        await Promise.all(
+          dbProperties.map(async (property) => {
+            try {
+              const owner = await nftContract.ownerOf(property.nft_token_id);
+              const normalizedOwner = owner.toLowerCase();
+
+              if (normalizedOwner === account.toLowerCase()) {
+                ownedProperties.push(property);
+                return;
+              }
+
+              if (escrowAddress && normalizedOwner === escrowAddress) {
+                const relatedLoan = latestLoanByNftId.get(Number(property.nft_token_id));
+                if (!relatedLoan || visibleLockedStatuses.has(relatedLoan.status)) {
+                  escrowLockedProperties.push({
+                    ...property,
+                    loanStatus: relatedLoan?.status || 'Locked',
+                    loanId: relatedLoan?.id || null,
+                  });
+                }
+              }
+            } catch {
+              // Ignore NFTs that cannot be resolved from the configured contract.
+            }
+          })
+        );
+
+        if (!cancelled) {
+          setProperties(ownedProperties);
+          setLockedProperties(escrowLockedProperties);
+
+          if (dbProperties.length > 0 && ownedProperties.length === 0 && escrowLockedProperties.length === 0) {
+            toast.error('No eligible property NFTs were found in the connected wallet');
+          }
+        }
+      } catch (err) {
+        console.error('Load eligible properties error:', err);
+        if (!cancelled) {
+          setProperties([]);
+          setLockedProperties([]);
+          toast.error('Failed to load eligible property NFTs');
+        }
+      } finally {
+        if (!cancelled) {
+          setPropertiesLoading(false);
+        }
+      }
+    };
+
+    loadEligibleProperties();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [account]);
 
   const loanAmount = parseFloat(form.loanAmount) || 0;
   const rate = parseFloat(form.interestRate) || 0;
@@ -73,26 +169,49 @@ export default function ApplyLoan() {
     try {
       await ensureSupportedNetwork();
 
-      toast.loading('Approving NFT transfer in MetaMask...', { id: 'approve' });
       const provider = await getProvider();
       const signer = await provider.getSigner();
       const nftContract = await getPropertyNFTContract(signer);
       const addresses = getContractAddresses();
+      const escrowAddress = addresses?.propertyEscrow;
+      const nftId = BigInt(form.nftId);
 
-      const approveTarget = addresses.propertyEscrow || addresses.mortgageCore || addresses.mortgageLoan;
-      const approveTx = await nftContract.approve(approveTarget, form.nftId);
-      await approveTx.wait();
-      toast.dismiss('approve');
-      toast.success('NFT transfer approved');
+      if (!escrowAddress) {
+        throw new Error('PropertyEscrow contract is not configured');
+      }
+
+      const owner = await nftContract.ownerOf(nftId);
+      if (owner.toLowerCase() !== account.toLowerCase()) {
+        throw new Error('The connected wallet does not own this property NFT');
+      }
+
+      const approvedAddress = await nftContract.getApproved(nftId);
+      const isOperatorApproved = await nftContract.isApprovedForAll(account, escrowAddress);
+
+      if (approvedAddress.toLowerCase() !== escrowAddress.toLowerCase() && !isOperatorApproved) {
+        toast.loading('Approving NFT transfer in MetaMask...', { id: 'approve' });
+        const approveTx = await nftContract.approve(escrowAddress, nftId);
+        await approveTx.wait();
+        toast.dismiss('approve');
+        toast.success('NFT transfer approved');
+      }
 
       toast.loading('Submitting loan application in MetaMask...', { id: 'apply' });
       const loanContract = await getMortgageLoanContract(signer);
       const loanAmountWei = parseEther(form.loanAmount);
       const interestBps = Math.round(parseFloat(form.interestRate) * 100);
 
+      await loanContract.applyLoan.staticCall(
+        addresses.propertyNFT,
+        nftId,
+        loanAmountWei,
+        interestBps,
+        parseInt(form.durationMonths, 10)
+      );
+
       const tx = await loanContract.applyLoan(
         addresses.propertyNFT,
-        form.nftId,
+        nftId,
         loanAmountWei,
         interestBps,
         parseInt(form.durationMonths, 10)
@@ -147,7 +266,7 @@ export default function ApplyLoan() {
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label>Select Property (NFT)</label>
-              <select value={form.propertyId} onChange={handlePropertySelect} required>
+              <select value={form.propertyId} onChange={handlePropertySelect} required disabled={propertiesLoading}>
                 <option value="">-- Select a property --</option>
                 {properties.map((property) => (
                   <option key={property.id} value={property.id}>
@@ -155,6 +274,34 @@ export default function ApplyLoan() {
                   </option>
                 ))}
               </select>
+              {!propertiesLoading && properties.length === 0 && (
+                <small>
+                  {lockedProperties.length > 0
+                    ? 'Your property NFTs are currently locked in escrow for existing loans.'
+                    : 'No property NFTs owned by the connected wallet are available for collateral.'}
+                </small>
+              )}
+              {!propertiesLoading && lockedProperties.length > 0 && (
+                <div className="locked-property-notices">
+                  <ul className="locked-property-list">
+                    {lockedProperties
+                      .slice()
+                      .sort((left, right) => Number(left.nft_token_id) - Number(right.nft_token_id))
+                      .map((property) => (
+                        <li key={property.id} className="locked-property-item">
+                          <div className="locked-property-main">
+                            <strong>NFT #{property.nft_token_id}</strong>
+                            <span>{property.name}</span>
+                          </div>
+                          <div className="locked-property-meta">
+                            <span className="status-badge locked-loan-badge">{property.loanStatus}</span>
+                            {property.loanId ? <span>Loan #{property.loanId}</span> : null}
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="form-grid">

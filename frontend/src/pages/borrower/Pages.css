@@ -438,6 +438,66 @@
   color: #a5b4fc;
 }
 
+.locked-property-notices {
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.42);
+  border: 1px solid rgba(99, 102, 241, 0.14);
+}
+
+.locked-property-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.locked-property-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.72);
+}
+
+.locked-property-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.locked-property-main strong {
+  color: #e2e8f0;
+  font-size: 0.88rem;
+}
+
+.locked-property-main span {
+  color: #cbd5e1;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.locked-property-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.locked-loan-badge {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.24);
+}
+
 /* ===== Payment Layout ===== */
 .payment-layout {
   display: grid;
@@ -742,4 +802,6 @@
   .payment-layout { grid-template-columns: 1fr; }
   .property-view-layout { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  .locked-property-item { align-items: flex-start; flex-direction: column; }
+  .locked-property-meta { justify-content: flex-start; }
 }
